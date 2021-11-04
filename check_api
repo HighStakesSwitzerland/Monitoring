@@ -1,0 +1,42 @@
+#!/bin/bash
+
+#echo $(curl -s localhost:5005/$1)
+
+status=$(curl -s localhost:5005/$1)
+
+if [[ $1 =~ (validator_status|bonding_status) ]]; then 
+
+	if [ $status = true ]; then
+		echo "OK"
+		exit 0
+	elif [ $status = false ]; then
+		echo "CRITICAL"
+		exit 2
+
+	else
+	       	echo "UNKNOWN"
+		exit 3
+
+	fi
+
+elif [[ $1 =~ (block_delay) ]]; then
+	if [ $status -eq 0 ]; then
+		echo N/A
+		exit 0
+elif (( $(echo "$status < 2" | bc -l) )); then	
+		echo $status seconds
+		exit 0
+	else
+		echo $status seconds
+		exit 1
+	fi
+
+elif [[ $1 =~ (missed_block_height) ]]; then
+	if [ $status -eq 0 ]; then
+		echo N/A
+		exit 0
+	else
+		echo $status
+		exit 1
+	fi
+fi
