@@ -139,7 +139,7 @@ args = parser.parse_args()
 app = None
 
 for i in args.i:
-    getData = GetData(i, app) #['terra', 26657])#argv[1])
+    getData = GetData(i, app)
     getData.daemon = True
     if app is None:
         app = getData.app

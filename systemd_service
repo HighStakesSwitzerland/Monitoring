@@ -7,7 +7,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=python3 /PATH/TO/terra_scripts/cosmos_validators_monitoring.py -i VALIDATOR_NAME PORT -i VALIDATOR_NAME2 PORT2 etc.
+ExecStart=python3 /PATH/TO/cosmos_validators_monitoring.py -i VALIDATOR_NAME PORT -i VALIDATOR_NAME2 PORT2 etc.
 
 [Install]
 WantedBy=multi-user.target
