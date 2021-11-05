@@ -7,13 +7,13 @@ status=$(curl -s localhost:5005/$1)
 if [[ $1 =~ (validator_status|bonding_status) ]]; then 
 
 	if [ $status = true ]; then
-		echo "OK"
+		echo OK
 		exit 0
 	elif [ $status = false ]; then
-		echo "CRITICAL"
+		echo CRITICAL
 		exit 2
 	else
-	       	echo "UNKNOWN"
+	       	echo UNKNOWN
 		exit 3
 
 	fi
@@ -40,6 +40,6 @@ elif [[ $1 =~ (missed_block_height) ]]; then
   elif [ $status -lt 0 ]; then
           echo BLOCK_HEIGHT_NOT_INCREMENTING
           exit 2
-
+  fi
 
 fi
