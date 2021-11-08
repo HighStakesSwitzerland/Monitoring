@@ -81,6 +81,7 @@ class GetData(Thread):
                     if (self.previous_block_height == 0) or (self.block_height > self.previous_block_height):  # first start or normal behavior
                         self.previous_block_height = self.block_height
                         self.blocks_not_incrementing_counter = 0
+                        self.missed_block_height = 0
                     elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 2:  # this isn't normal, but let's wait a couple loops
                         self.blocks_not_incrementing_counter += 1
                     elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 2:  # still not incrementing: issue!
