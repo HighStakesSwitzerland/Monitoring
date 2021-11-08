@@ -6,6 +6,8 @@ Clone the repo, update <code>automated_install.sh</code> (disk info) and <code>s
 
 <b>INSTRUCTIONS</b>
 
+- A couple Python modules are needed : <code>uvicorn</code> and <code>fastapi</code>. <br>
+Install with <code>python3 -m pip install uvicorn fastapi</code>.
 - You need to install Nagios on a Linux host, along with the webserver (Apache by default, probably possible to use another if you're feeling adventurous).<br>
 This tutorial is pretty straightforward: https://support.nagios.com/kb/article/nagios-core-installing-nagios-core-from-source-96.html
 <br><br>
@@ -24,4 +26,5 @@ This requires enabling the "Access for less secure apps" on this account, so bet
 - The remote hosts can be easily configured by cloning the repo and running the <code>automated_install.sh</code> script, <b>after having updated the relevant parameters</b>.
 - Quick note though: this deployment requires updating the firewall. We're using cloud services so the firewalls are updated manually from the provider's GUI, but otherwise you should update iptables/ufw.
  
-- Don't hesitate to ping us on Discord: <code>Thomas | Terran Stakers</code> or <code>Joe | Terran Stakers</code>
+- Don't hesitate to ping us on Discord: <code>Thomas | Terran Stakers#0885</code> or <code>Joe | Terran Stakers#0880
+</code>
