@@ -2,7 +2,7 @@
 This repository contains configuration files for a Nagios 4 deployment, that would monitor one to multiple Cosmos/Tendermint-based validators:
 - Nagios server configuration files, which <b>must be updated to match one's actual setup</b>, 
 - Remote server(s) setup and scripts (API, NRPE),
-- The remote hosts are monitored by querying a custom API (Python3/FastAPI) and getting some key parameters about the validator.
+- The remote hosts are monitored by querying a custom API (Python3/FastAPI) through Nagios' NRPE and getting some key parameters about the validator.
 
 <b>WHY?</b>
 
