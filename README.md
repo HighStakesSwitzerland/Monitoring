@@ -6,7 +6,7 @@ This repository contains configuration files for a Nagios 4 deployment, that wou
 
 <b>WHY?</b>
 
-- We intend to provide a means for the community to monitor their validators, accessible even to those without much knowledge. As such, the code is voluntarily kept as simple as it can possibly be -- it may be subject to changes, improvements and complexification, but we'll try to keep it easily readable.
+- We intend to provide a means for the community to monitor their validators, accessible even to those without much technical knowledge. As such, the code is voluntarily kept as simple as it can possibly be -- it may be subject to changes, improvements and complexification, but we'll try to keep it easily readable and deployable.
 - The monitoring tool allows one to be alerted almost instantly whenever a problem arises, thus being able to quickly resolve an issue and in turn, improve the overall stability of the network.<br>
 Avoiding being slashed is also a nice perk.
 - Why Nagios? This is clearly not the most modern of the monitoring solutions, however it is one of the easiest to understand and set up. It is also very low on resources: our initial deployment tests were on a Raspberry Pi 3, which handled the task without any problem. This can be installed on pretty much any Linux machine.
