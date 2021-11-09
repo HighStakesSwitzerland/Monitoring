@@ -11,6 +11,16 @@ This repository contains configuration files for a Nagios 4 deployment, that wou
 Avoiding being slashed is also a nice perk.
 - Why Nagios? This is clearly not the most modern of the monitoring solutions, however it is one of the easiest to understand and set up. It is also very low on resources: our initial deployment tests were on a Raspberry Pi 3, which handled the task without any problem. This can be installed on pretty much any Linux machine.
 
+<b>MONITORED METRICS</b>
+
+- <code>Disk space</code>: WARNING at 15 Go left, CRITICAL at 5 Go.
+- The Python script creates API endpoints allowing to monitor the following items:
+  - <code>Validator Status</code>: whether the node is running (OK) or not (CRITICAL). 
+  - <code>Block Delay</code>: delta between the node's block timestamp and the official timestamp. WARNING if above 2s (and usually it's about 0.1s max).
+  - <code>Missed Block</code>: WARNING if the node missed a block. Displays the missed block number, 'N/A' otherwise. This metric also monitors that the block height is properly incrementing. Status become CRITICAL if the height does not increment for about 15 seconds.
+  - <code>Bonding Status</code>: OK if the validator is bonded (= part of the active set), CRITICAL otherwise.
+
+Other metrics and endpoints can easily be added in the script, and the corresponding services defined in Nagios.
 
 <b>INSTRUCTIONS</b>
 
