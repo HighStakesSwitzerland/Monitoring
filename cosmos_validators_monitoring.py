@@ -70,7 +70,12 @@ class GetData(Thread):
             #add a sleep here to prevent making the request again instantly.
             sleep(1)
             while self.validator_is_up:
-                self.status_data = requests.get(self.status_url).json()
+                try:
+                    self.status_data = requests.get(self.status_url).json()
+                except:
+                    self.validator_is_up = False
+                    break #exit the inner loop
+
                 self.block_height = self.status_data['result']['sync_info']['latest_block_height']
                 signatures_data = self.get_signatures_data() #get the signatures data matching the block height
                 if signatures_data:
