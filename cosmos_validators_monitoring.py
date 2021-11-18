@@ -120,24 +120,22 @@ class GetData(Thread):
                 if 'error' in bonding_data.keys():  # no more data. Validator no longer bonded
                     self.bonding_status = False
                     return
-                pass
 
     def check_missed_block(self, signatures_data):
         """check if the signature details of our node are present in the data"""
         #If the node missed the block, it will trigger an exception, which is used to update the variable.
 
         try:
-            signatures_data = [i for i in signatures_data['result']['block']['last_commit']['signatures'] \
-                    if i['validator_address'] == self.validator_address][0]  # a dict within a list, hence the [0] to get the dict only
-            if not self.missed_block_height == -1:
-                self.missed_block_height = 0
-            #print(signatures_data)
-            return datetime.strptime(signatures_data['timestamp'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
+            if [j for j in signatures_data['result']['block']['last_commit']['signatures'] \
+                    if j['validator_address'] == self.validator_address][0]:  # a dict within a list, hence the [0] to get the dict only
+                if not self.missed_block_height == -1:
+                    self.missed_block_height = 0
+                return datetime.strptime(signatures_data['timestamp'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
         except IndexError:
             # if no signature data while the node is bonded, it means that a block was missed.
             if not self.missed_block_height == -1:
                 self.missed_block_height = int(self.block_height)
-        return None
+            return None
 
     def check_time_delta(self, status_block_timestamp, official_block_timestamp):
         """check the delta between block timestamp and signature timestamp. If above 8, warning"""
