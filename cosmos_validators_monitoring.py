@@ -74,33 +74,33 @@ class GetData(Thread):
                     self.status_data = requests.get(self.status_url).json()
                 except:
                     self.validator_is_up = False
-                    break #exit the inner loop
 
-                self.block_height = self.status_data['result']['sync_info']['latest_block_height']
-                signatures_data = self.get_signatures_data() #get the signatures data matching the block height
-                if signatures_data:
-                    official_block_timestamp = datetime.strptime(signatures_data['result']['block']['header']['time'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
-                    # timestamps have nanoseconds, so need to strip the last 3 digits (drop the last 4 characters then restore the 'Z', actually)
+                if self.validator_is_up:
+                    self.block_height = self.status_data['result']['sync_info']['latest_block_height']
+                    signatures_data = self.get_signatures_data() #get the signatures data matching the block height
+                    if signatures_data:
+                        official_block_timestamp = datetime.strptime(signatures_data['result']['block']['header']['time'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
+                        # timestamps have nanoseconds, so need to strip the last 3 digits (drop the last 4 characters then restore the 'Z', actually)
 
-                    # Need to verify that the block height is incrementing. Sometimes the node is actually down but all
-                    # other metrics are fine, just this height is stuck
-                    if (self.previous_block_height == 0) or (self.block_height > self.previous_block_height):  # first start or normal behavior
-                        self.previous_block_height = self.block_height
-                        self.blocks_not_incrementing_counter = 0
-                        self.missed_block_height = 0
-                    elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 2:  # this isn't normal, but let's wait a couple loops
-                        self.blocks_not_incrementing_counter += 1
-                    elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 2:  # still not incrementing: issue!
-                        self.missed_block_height = -1  # this will set the metric to Critical in Nagios.
+                        # Need to verify that the block height is incrementing. Sometimes the node is actually down but all
+                        # other metrics are fine, just this height is stuck
+                        if (self.previous_block_height == 0) or (self.block_height > self.previous_block_height):  # first start or normal behavior
+                            self.previous_block_height = self.block_height
+                            self.blocks_not_incrementing_counter = 0
+                            self.missed_block_height = 0
+                        elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 2:  # this isn't normal, but let's wait a couple loops
+                            self.blocks_not_incrementing_counter += 1
+                        elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 2:  # still not incrementing: issue!
+                            self.missed_block_height = -1  # this will set the metric to Critical in Nagios.
 
-                    status_block_timestamp = self.check_missed_block(signatures_data)
-                    if self.missed_block_height == 0:  # no block was missed, we can check the time delta.
-                        self.bonding_status = True  # validator is bonded otherwise the above would be none
-                        self.check_time_delta(status_block_timestamp, official_block_timestamp)
-                    else:  # if a block was missed, must verify bonding status.
-                        self.get_bonding_info()
+                        status_block_timestamp = self.check_missed_block(signatures_data)
+                        if self.missed_block_height == 0:  # no block was missed, we can check the time delta.
+                            self.bonding_status = True  # validator is bonded otherwise the above would be none
+                            self.check_time_delta(status_block_timestamp, official_block_timestamp)
+                        else:  # if a block was missed, must verify bonding status.
+                            self.get_bonding_info()
 
-                sleep(5)
+                    sleep(5)
 
             sleep(5) #if the validator is down, 5s between checks.
 
