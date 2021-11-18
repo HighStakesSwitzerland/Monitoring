@@ -34,7 +34,7 @@ class GetData(Thread):
         ###
         ###TERRA ENDPOINTS###
         ###setup FastAPI
-        if app == None:
+        if app is None:
             self.app = FastAPI()
             self.app.type = "00"
         else:
@@ -75,6 +75,7 @@ class GetData(Thread):
                 signatures_data = self.get_signatures_data() #get the signatures data matching the block height
                 if signatures_data:
                     official_block_timestamp = datetime.strptime(signatures_data['result']['block']['header']['time'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
+                    # timestamps have nanoseconds, so need to strip the last 3 digits (drop the last 4 characters then restore the 'Z', actually)
 
                     # Need to verify that the block height is incrementing. Sometimes the node is actually down but all
                     # other metrics are fine, just this height is stuck
@@ -95,6 +96,9 @@ class GetData(Thread):
                         self.get_bonding_info()
 
                 sleep(5)
+
+            sleep(5) #if the validator is down, 5s between checks.
+
 
     def get_signatures_data(self):
         """return the details of the block signature by all the bonded validators"""
@@ -138,8 +142,7 @@ class GetData(Thread):
             return None
 
     def check_time_delta(self, status_block_timestamp, official_block_timestamp):
-        """check the delta between block timestamp and signature timestamp. If above 8, warning"""
-        # timestamps have nanoseconds, so need to strip the last 3 digits (drop the last 4 characters then restore the 'Z', actually)
+        """check the delta between block timestamp and signature timestamp. If above 2, warning"""
         #print(status_block_timestamp, official_block_timestamp)
         self.block_delay = round((official_block_timestamp - status_block_timestamp).total_seconds(), 1)
 
