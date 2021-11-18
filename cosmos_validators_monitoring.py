@@ -126,11 +126,11 @@ class GetData(Thread):
         #If the node missed the block, it will trigger an exception, which is used to update the variable.
 
         try:
-            if [j for j in signatures_data['result']['block']['last_commit']['signatures'] \
-                    if j['validator_address'] == self.validator_address][0]:  # a dict within a list, hence the [0] to get the dict only
-                if not self.missed_block_height == -1:
-                    self.missed_block_height = 0
-                return datetime.strptime(signatures_data['timestamp'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
+            signature = [j for j in signatures_data['result']['block']['last_commit']['signatures'] \
+                    if j['validator_address'] == self.validator_address][0]  # a dict within a list, hence the [0] to get the dict only
+            if not self.missed_block_height == -1:
+                self.missed_block_height = 0
+            return datetime.strptime(signature['timestamp'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
         except IndexError:
             # if no signature data while the node is bonded, it means that a block was missed.
             if not self.missed_block_height == -1:
