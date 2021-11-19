@@ -82,16 +82,7 @@ class GetData(Thread):
                         official_block_timestamp = datetime.strptime(signatures_data['result']['block']['header']['time'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
                         # timestamps have nanoseconds, so need to strip the last 3 digits (drop the last 4 characters then restore the 'Z', actually)
 
-                        # Need to verify that the block height is incrementing. Sometimes the node is actually down but all
-                        # other metrics are fine, just this height is stuck
-                        if (self.previous_block_height == 0) or (self.block_height > self.previous_block_height):  # first start or normal behavior
-                            self.previous_block_height = self.block_height
-                            self.blocks_not_incrementing_counter = 0
-                            self.missed_block_height = 0
-                        elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 2:  # this isn't normal, but let's wait a couple loops
-                            self.blocks_not_incrementing_counter += 1
-                        elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 2:  # still not incrementing: issue!
-                            self.missed_block_height = -1  # this will set the metric to Critical in Nagios.
+                        self.check_blocks_incrementing() #verify that block number is increasing.
 
                         status_block_timestamp = self.check_missed_block(signatures_data)
                         if self.missed_block_height == 0:  # no block was missed, we can check the time delta.
@@ -103,7 +94,6 @@ class GetData(Thread):
                     sleep(5)
 
             sleep(5) #if the validator is down, 5s between checks.
-
 
     def get_signatures_data(self):
         """return the details of the block signature by all the bonded validators"""
@@ -145,6 +135,18 @@ class GetData(Thread):
             if not self.missed_block_height == -1:
                 self.missed_block_height = int(self.block_height)
             return None
+
+    def check_blocks_incrementing(self):
+        """Need to verify that the block height is incrementing. Sometimes the node is actually down but all\
+        other metrics are fine, just this height is stuck"""
+        if (self.previous_block_height == 0) or (self.block_height > self.previous_block_height):  # first start or normal behavior
+            self.previous_block_height = self.block_height
+            self.blocks_not_incrementing_counter = 0
+            self.missed_block_height = 0
+        elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 4:  # this isn't normal, but let's wait a few loops
+            self.blocks_not_incrementing_counter += 1
+        elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 2:  # still not incrementing: issue!
+            self.missed_block_height = -1  # this will set the metric to Critical in Nagios.
 
     def check_time_delta(self, status_block_timestamp, official_block_timestamp):
         """check the delta between block timestamp and signature timestamp. If above 2, warning"""
