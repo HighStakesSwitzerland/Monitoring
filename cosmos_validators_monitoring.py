@@ -143,9 +143,9 @@ class GetData(Thread):
             self.previous_block_height = self.block_height
             self.blocks_not_incrementing_counter = 0
             self.missed_block_height = 0
-        elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 4:  # this isn't normal, but let's wait a few loops
+        elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 5:  # this isn't normal, but let's wait a few loops
             self.blocks_not_incrementing_counter += 1
-        elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 2:  # still not incrementing: issue!
+        elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 5:  # still not incrementing: issue!
             self.missed_block_height = -1  # this will set the metric to Critical in Nagios.
 
     def check_time_delta(self, status_block_timestamp, official_block_timestamp):
