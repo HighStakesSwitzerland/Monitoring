@@ -1,4 +1,4 @@
-import logging
+#import logging
 from threading import Thread
 from time import sleep
 import requests
@@ -9,8 +9,8 @@ from fastapi import FastAPI
 
 from argparse import ArgumentParser
 
-logging.basicConfig(filename='/var/log/monitoring.log', filemode='w',
-                    format='%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S :', level=logging.WARNING)
+#.basicConfig(filename='/var/log/monitoring.log', filemode='w',
+#                    format='%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S :', level=logging.WARNING)
 
 
 class GetData(Thread):
@@ -71,7 +71,7 @@ class GetData(Thread):
                 self.validator_is_up = True
             except:
                 self.validator_is_up = False
-                logging.critical('Validator is down')
+                #logging.critical('Validator is down')
 
             #need to refresh self.status_data below, as the above block won't be executed anymore...
             #add a sleep here to prevent making the request again instantly.
@@ -150,13 +150,13 @@ class GetData(Thread):
             self.previous_block_height = self.block_height
             self.blocks_not_incrementing_counter = 0
             self.missed_block_height = 0
-            logging.warning(f"Blocks are incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
-        elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 8:  # this isn't normal, but let's wait a few loops
+            #logging.warning(f"Blocks are incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
+        elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 3:  # this isn't normal, but let's wait a few loops
             self.blocks_not_incrementing_counter += 1
-            logging.warning(f"Blocks aren't incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
-        elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 8:  # still not incrementing: issue!
+            #logging.warning(f"Blocks aren't incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
+        elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 3:  # still not incrementing: issue!
             self.missed_block_height = -1  # this will set the metric to Critical in Nagios.
-            logging.critical(f"Height is stuck: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
+            #logging.critical(f"Height is stuck: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
 
 
     def check_time_delta(self, status_block_timestamp, official_block_timestamp):
