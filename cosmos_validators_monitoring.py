@@ -9,15 +9,13 @@ from fastapi import FastAPI
 
 from argparse import ArgumentParser
 
-logging.basicConfig(filename='monitoring.log', filemode='w',
-                    format='%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S :', level=logging.DEBUG)
+logging.basicConfig(filename='/var/log/monitoring.log', filemode='w',
+                    format='%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S :', level=logging.WARNING)
 
 
 class GetData(Thread):
     def __init__(self, data, app=None):
         super().__init__()
-
-        logging.info('Monitoring has started')
 
         # Define the validator name and port
         self.VALIDATOR = data[0]
@@ -100,9 +98,9 @@ class GetData(Thread):
                         else:  # if a block was missed, must verify bonding status.
                             self.get_bonding_info()
 
-                    sleep(5)
+                    sleep(7)
 
-            sleep(5) #if the validator is down, 5s between checks.
+            sleep(6) #if the validator is down, 7s overall between checks.
 
     def get_signatures_data(self):
         """return the details of the block signature by all the bonded validators"""
@@ -152,6 +150,7 @@ class GetData(Thread):
             self.previous_block_height = self.block_height
             self.blocks_not_incrementing_counter = 0
             self.missed_block_height = 0
+            logging.warning(f"Blocks are incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
         elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 8:  # this isn't normal, but let's wait a few loops
             self.blocks_not_incrementing_counter += 1
             logging.warning(f"Blocks aren't incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
