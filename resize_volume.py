@@ -65,7 +65,7 @@ class ResizeVolume:
       #no need to keep buying additional space if it's not actually used.
       os_size = 0
       try:
-        os_size = int(check_output(["ssh", f"root@{self.ip}", f'df -h | grep {self.mount_point}'], timeout=10).decode('utf-8').split()[1][:-1])
+        os_size = round(float(check_output(["ssh", f"root@{self.ip}", f'df -h | grep {self.mount_point}'], timeout=10).decode('utf-8').split()[1][:-1]))
       except:
         #well I don't know. Do nothing anyway.
         pass
@@ -73,7 +73,7 @@ class ResizeVolume:
       if isclose(os_size, current_size, abs_tol=5): #both sizes are close enough, so we can proceed
         #POST request to resize the volume (add 15G)
         data = {'type':'resize','size_gigabytes': current_size+15, "region": f'{do_region}'}
-        result = requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}', headers=self.headers, data=dumps(data), timeout=30).json()
+        result = requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions', headers=self.headers, data=dumps(data), timeout=30).json()
 
         if result['action']['status'] == 'done':
           if filesystem == 'ext4':
