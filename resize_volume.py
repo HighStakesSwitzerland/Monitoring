@@ -97,8 +97,8 @@ class ResizeVolume:
 
     os_size = 0
     try:
-      os_size = int(check_output(["ssh", f"root@{self.ip}", f'df -h | grep {self.mount_point}'], timeout=10).decode(
-        'utf-8').split()[1][:-1])
+      os_size = round(float(check_output(["ssh", f"root@{self.ip}", f'df -h | grep {self.mount_point}'], timeout=10).decode(
+        'utf-8').split()[1][:-1]))
     except:
       pass
 
