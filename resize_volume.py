@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 #An event handler for Nagios, that automatically increases a Digital Ocean
 #volume size when the remaining space is less than 5G through an API call.
 from time import sleep
@@ -89,7 +91,7 @@ class ResizeVolume:
 
   def hetzner(self):
 
-    volume_details = requests.get(f'https://api.hetnzer.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
+    volume_details = requests.get(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
                                   timeout=30).json()
 
     current_size = int(volume_details['volume']['size'])
@@ -104,12 +106,12 @@ class ResizeVolume:
 
     if isclose(os_size, current_size, abs_tol=5):
       data = {'size': current_size + 15}
-      requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions/resize', headers=self.headers,
+      requests.post(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}/actions/resize', headers=self.headers,
                              data=dumps(data), timeout=30).json()
 
       #the result isn't sent back immediately. Just check the new size of the volume to make sure it worked.
       sleep(3) #wait a bit to ensure the command is actually passed (although from the timestamps, it's done instantly).
-      new_size = int(requests.get(f'https://api.hetnzer.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
+      new_size = int(requests.get(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
                                   timeout=30).json()['volume']['size'])
       if new_size > current_size:
         if filesystem == 'ext4':
