@@ -78,12 +78,7 @@ class ResizeVolume:
         result = requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions', headers=self.headers, data=dumps(data), timeout=30).json()
 
         if result['action']['status'] == 'done':
-          if filesystem == 'ext4':
-            command = 'resize2fs'
-          else:
-            command = 'xfs_grows'
-          Popen(["ssh", f"root@{self.ip}", f"{command} {self.mount_point}"])
-
+          self.expand_filesystem(filesystem)
           exit(0)
         #no need for a try/except: script will fail whatever the exception. Someone will need to manually increase the volume size.
         #next run will detect that the disk size at the os and droplet levels are different and abort.
@@ -114,14 +109,18 @@ class ResizeVolume:
       new_size = int(requests.get(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
                                   timeout=30).json()['volume']['size'])
       if new_size > current_size:
-        if filesystem == 'ext4':
-          command = 'resize2fs'
-        else:
-          command = 'xfs_grows'
-        Popen(["ssh", f"root@{self.ip}", f"{command} {self.mount_point}"])
-
+        self.expand_filesystem(filesystem)
         exit(0)
+
     exit(1)
+
+  def expand_filesystem(self, filesystem):
+    if filesystem == 'ext4':
+      command = 'resize2fs'
+    else:
+      command = 'xfs_growfs'
+    Popen(["ssh", f"root@{self.ip}", f"{command} {self.mount_point}"])
+    return
 
 parser = ArgumentParser()
 parser.add_argument('host')
