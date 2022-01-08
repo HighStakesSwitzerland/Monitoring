@@ -4,6 +4,10 @@ This repository contains configuration files for a Nagios 4 deployment, that wou
 - Remote server(s) setup and scripts (API, NRPE),
 - The remote hosts are monitored by querying a custom API (Python3/FastAPI) through Nagios' NRPE and getting some key parameters about the validator.
 
+- <code>resize_volume.py</code> is a script allowing to automatically increase the disk space for Hetzner and Digital Ocean, using their respective API.<br>
+The relevant data (disk ids, API tokens, disk mount points) must be defined in another file named <code>volume_data.py</code> and both should be placed in <code>/usr/local/nagios/libexec/</code>
+- This works with Nagios and the different values such as the host and service names should match the hostnames from Nagios (in our case, host may be <code>HETZNER-1</code>, service may be <code>Check Disk Space 2</code>, and so on).
+
 <b>WHY?</b>
 
 - We intend to provide a means for the community to monitor their validators, accessible even to those without much technical knowledge. As such, the code is voluntarily kept as simple as it can possibly be -- it may be subject to changes, improvements and complexification, but we'll try to keep it easily readable and deployable.
