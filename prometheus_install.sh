@@ -4,6 +4,9 @@ curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest | gre
 tar xf prometheus*.tar.gz
 cd prometheus*/
 
+#listen on the node_exporter's port. Need to also add the Prometheus ports of the validator(s) if enabled.
+sed -i s/localhost:9090/localhost:9100/g prometheus.yml
+
 groupadd --system prometheus
 useradd -s /sbin/nologin --system -g prometheus prometheus
 
@@ -45,8 +48,37 @@ for i in rules rules.d files_sd; do sudo chown -R prometheus:prometheus /etc/pro
 for i in rules rules.d files_sd; do sudo chmod -R 775 /etc/prometheus/${i}; done
 chown -R prometheus:prometheus /var/lib/prometheus/
 
+#install node_exporter to get the server's metrics
+curl -s https://api.github.com/repos/prometheus/node_exporter/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi -
+tar xf node_exporter*.tar.gz
+mv node_exporter*/node_exporter /etc/prometheus
+
+tee /etc/systemd/system/node_exporter.service<<EOF
+[Unit]
+Description=Prometheus - Node Exporter
+Documentation=https://prometheus.io/docs/introduction/overview/
+Wants=network-online.target
+After=network-online.target
+Before=prometheus.service
+
+[Service]
+Type=simple
+User=prometheus
+Group=prometheus
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/etc/prometheus/node_exporter
+
+SyslogIdentifier=prometheus
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 systemctl daemon-reload
 systemctl enable prometheus
+systemctl start prometheus
+systemctl start node_exporter
 
 cd .. 
 rm -r prometheus-* 
