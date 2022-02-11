@@ -65,22 +65,26 @@ class GetData(Thread):
 
         while True:
             #Get the validator address
+            print("START MAIN LOOP")
             try: #if the node is down, or self.PORT is wrong, will trigger an exception.
                 self.status_data = requests.get(self.status_url).json()
                 self.validator_address = self.status_data['result']['validator_info']['address']
                 self.validator_is_up = True
             except:
                 self.validator_is_up = False
+                print('LOOP 1: Validator is down')
                 #logging.critical('Validator is down')
 
             #need to refresh self.status_data below, as the above block won't be executed anymore...
             #add a sleep here to prevent making the request again instantly.
             sleep(1)
             while self.validator_is_up:
+                print("START SECOND LOOP")
                 try:
                     self.status_data = requests.get(self.status_url).json()
                 except:
                     self.validator_is_up = False
+                    print('LOOP 2: Validator is down')
                     sleep(7)
 
                 if self.validator_is_up:
@@ -99,8 +103,9 @@ class GetData(Thread):
                         else:  # if a block was missed, must verify bonding status.
                             self.get_bonding_info()
 
+                    print("SLEEPING 7 SECONDS")
                     sleep(7)
-
+            print("SLEEPING 6 SECONDS")
             sleep(6) #if the validator is down, 7s overall between checks.
 
     def get_signatures_data(self):
