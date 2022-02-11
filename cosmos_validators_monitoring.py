@@ -81,6 +81,7 @@ class GetData(Thread):
                     self.status_data = requests.get(self.status_url).json()
                 except:
                     self.validator_is_up = False
+                    sleep(7)
 
                 if self.validator_is_up:
                     self.block_height = self.status_data['result']['sync_info']['latest_block_height']

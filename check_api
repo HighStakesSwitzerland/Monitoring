@@ -13,7 +13,7 @@ if [[ $1 =~ (validator_status|bonding_status) ]]; then
 		echo CRITICAL
 		exit 2
 	else
-	       	echo UNKNOWN
+	  echo UNKNOWN
 		exit 3
 
 	fi

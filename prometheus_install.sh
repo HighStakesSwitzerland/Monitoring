@@ -78,6 +78,7 @@ EOF
 systemctl daemon-reload
 systemctl enable prometheus
 systemctl start prometheus
+systemctl enable node_exporter
 systemctl start node_exporter
 
 cd .. 
