@@ -1,4 +1,5 @@
-#import logging
+import logging
+from math import isclose
 from threading import Thread
 from time import sleep
 import requests
@@ -9,8 +10,8 @@ from fastapi import FastAPI
 
 from argparse import ArgumentParser
 
-#.basicConfig(filename='/var/log/monitoring.log', filemode='w',
-#                    format='%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S :', level=logging.WARNING)
+logging.basicConfig(filename='/var/log/monitoring.log', filemode='w+',
+                    format='%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S :', level=logging.WARNING)
 
 
 class GetData(Thread):
@@ -32,6 +33,16 @@ class GetData(Thread):
         self.bonding_status = False
         self.missed_block_height = 0
         self.block_delay = 0
+
+        ##TERRA SPECIFIC : ORACLE API##
+        if self.VALIDATOR == 'terra':
+            self.oracle_url = 'http://localhost:1317/oracle/voters/terravaloper1uymwfafhq8fruvcjq8k67a29nqzrxnv9m6m427/miss'
+            self.oracle_status = "OK"
+            try:
+                self.missed_votes = int(requests.get(self.oracle_url).json()['result'])
+            except:
+                self.missed_votes = 0
+            self.timeout = 0
 
         ###define the urls to get the json data
         self.status_url = f"http://localhost:{self.PORT}/status"
@@ -61,47 +72,60 @@ class GetData(Thread):
         def missed_block_height():
             return self.missed_block_height
 
+        @self.app.get(f"/{self.VALIDATOR}/oracle_status")
+        def oracle_status():
+            return self.oracle_status
+
     def run(self):
 
         while True:
             #Get the validator address
-            print("START MAIN LOOP")
             try: #if the node is down, or self.PORT is wrong, will trigger an exception.
                 self.status_data = requests.get(self.status_url).json()
                 self.validator_address = self.status_data['result']['validator_info']['address']
                 self.validator_is_up = True
             except:
                 self.validator_is_up = False
-                print('LOOP 1: Validator is down')
-                #logging.critical('Validator is down')
+                logging.critical(f"{self.VALIDATOR} is down")
 
             #need to refresh self.status_data below, as the above block won't be executed anymore...
             #add a sleep here to prevent making the request again instantly.
             sleep(1)
             while self.validator_is_up:
-                print("START SECOND LOOP")
                 try:
                     self.status_data = requests.get(self.status_url).json()
                 except:
                     self.validator_is_up = False
-                    print('LOOP 2: Validator is down')
+                    logging.critical(f"{self.VALIDATOR} is down")
                     sleep(7)
 
                 if self.validator_is_up:
-                    self.block_height = self.status_data['result']['sync_info']['latest_block_height']
-                    signatures_data = self.get_signatures_data() #get the signatures data matching the block height
-                    if signatures_data:
-                        official_block_timestamp = datetime.strptime(signatures_data['result']['block']['header']['time'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
-                        # timestamps have nanoseconds, so need to strip the last 3 digits (drop the last 4 characters then restore the 'Z', actually)
+                    try:
+                        self.block_height = self.status_data['result']['sync_info']['latest_block_height']
+                        signatures_data = self.get_signatures_data() #get the signatures data matching the block height
+                        if signatures_data:
+                            official_block_timestamp = datetime.strptime(signatures_data['result']['block']['header']['time'][:-4:] + 'Z', '%Y-%m-%dT%H:%M:%S.%fZ')
+                            # timestamps have nanoseconds, so need to strip the last 3 digits (drop the last 4 characters then restore the 'Z', actually)
 
-                        self.check_blocks_incrementing() #verify that block number is increasing.
+                            self.check_blocks_incrementing() #verify that block number is increasing.
 
-                        status_block_timestamp = self.check_missed_block(signatures_data)
-                        if self.missed_block_height == 0:  # no block was missed, we can check the time delta.
-                            self.bonding_status = True  # validator is bonded otherwise the above would be none
-                            self.check_time_delta(status_block_timestamp, official_block_timestamp)
-                        else:  # if a block was missed, must verify bonding status.
-                            self.get_bonding_info()
+                            status_block_timestamp = self.check_missed_block(signatures_data)
+                            if self.missed_block_height == 0:  # no block was missed, we can check the time delta.
+                                self.bonding_status = True  # validator is bonded otherwise the above would be none
+                                self.check_time_delta(status_block_timestamp, official_block_timestamp)
+                            else:  # if a block was missed, must verify bonding status.
+                                self.get_bonding_info()
+                    except Exception as e:
+                        logging.critical(f"{self.VALIDATOR}: {str(e)}")
+
+                    #monitor the Terra oracle
+                    # Need to check that roughly every 1:30 rather than every 7s, otherwise it may be missed by Nagios.
+                    if self.VALIDATOR == 'terra':
+                        if self.timeout == 15:
+                            self.check_oracle_votes()
+                            self.timeout = 0
+                        else:
+                            self.timeout += 1
 
                     print("SLEEPING 7 SECONDS")
                     sleep(7)
@@ -114,24 +138,31 @@ class GetData(Thread):
             return requests.get(self.signatures_url).json()
         except:
             self.validator_is_up = False
+            logging.critical(f"{self.VALIDATOR}: no signatures data. Validator is down.")
             return None
 
     def get_bonding_info(self):
         """look for the validator address in the list of bonded validators. If not present, problem."""
         page_number = 1
         while True:
-            bonding_data = requests.get(
-                f"http://localhost:{self.PORT}/validators?status=BOND_STATUS_BONDED&per_page=100&page={page_number}").json()
             try:
+                bonding_data = requests.get(
+                f"http://localhost:{self.PORT}/validators?status=BOND_STATUS_BONDED&per_page=100&page={page_number}").json()
+
                 if [i for i in bonding_data['result']['validators'] if i['address'] == self.validator_address]:
                     self.bonding_status = True
                     return
                 else:
                     page_number += 1
-            except:
-                if 'error' in bonding_data.keys():  # no more data. Validator no longer bonded
-                    self.bonding_status = False
-                    return
+            except KeyError: #no more data to retrieve, hence the json result has no such keys. Validator no longer bonded
+                #if 'error' in bonding_data.keys():
+                logging.critical(f"{self.VALIDATOR}: unbonded")
+                self.bonding_status = False
+                return
+            except Exception as e:
+                logging.critical(f"{self.VALIDATOR}: get_bonding_info: unexpected error: {str(e)}")
+                self.bonding_status = False
+                return
 
     def check_missed_block(self, signatures_data):
         """check if the signature details of our node are present in the data"""
@@ -147,7 +178,12 @@ class GetData(Thread):
             # if no signature data while the node is bonded, it means that a block was missed.
             if not self.missed_block_height == -1:
                 self.missed_block_height = int(self.block_height)
+                logging.critical(f"{self.VALIDATOR}: Missed block {int(self.block_height)}")
             return None
+        except Exception as e:
+            logging.critical(f"{self.VALIDATOR}: check_missed_block: unexpected error: {str(e)}")
+            self.missed_block_height = int(self.block_height)
+            return
 
     def check_blocks_incrementing(self):
         """Need to verify that the block height is incrementing. Sometimes the node is actually down but all\
@@ -159,17 +195,42 @@ class GetData(Thread):
             #logging.warning(f"Blocks are incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
         elif (self.block_height == self.previous_block_height) and not self.blocks_not_incrementing_counter > 3:  # this isn't normal, but let's wait a few loops
             self.blocks_not_incrementing_counter += 1
-            #logging.warning(f"Blocks aren't incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
+            logging.warning(f"{self.VALIDATOR}: Blocks aren't incrementing: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
         elif (self.block_height == self.previous_block_height) and self.blocks_not_incrementing_counter > 3:  # still not incrementing: issue!
             self.missed_block_height = -1  # this will set the metric to Critical in Nagios.
-            #logging.critical(f"Height is stuck: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
+            logging.critical(f"{self.VALIDATOR}: Height is stuck: {self.block_height}. Counter: {self.blocks_not_incrementing_counter}")
 
 
     def check_time_delta(self, status_block_timestamp, official_block_timestamp):
         """check the delta between block timestamp and signature timestamp. If above 2, warning"""
         #print(status_block_timestamp, official_block_timestamp)
-        self.block_delay = round((official_block_timestamp - status_block_timestamp).total_seconds(), 1)
+        try:
+            self.block_delay = round((official_block_timestamp - status_block_timestamp).total_seconds(), 1)
+        except Exception as e:
+            logging.critical(f"{self.VALIDATOR}: check_time_delta : unexpected error: {str(e)}")
 
+
+    def check_oracle_votes(self):
+        try:
+            new_missed_votes = int(requests.get(self.oracle_url).json()['result'])
+        except:
+            new_missed_votes = 0
+        try:
+            oracle_height = int(requests.get(self.oracle_url).json()['height'])
+        except:
+            oracle_height = 0
+
+        missed = new_missed_votes - self.missed_votes
+        if missed > 0:
+            logging.warning(f"{self.VALIDATOR}: {missed} MISSED ORACLE VOTE(S)")
+            self.oracle_status = f"{missed} MISSED ORACLE VOTE(S)"
+        elif not isclose(oracle_height, int(self.block_height), abs_tol=1):
+            logging.critical(f"{self.VALIDATOR}: ORACLE IS STUCK: {oracle_height}")
+            self.oracle_status = f"ORACLE IS STUCK: {oracle_height}"
+        else:
+            self.oracle_status =  "OK"
+
+        self.missed_votes = new_missed_votes
 
 #if __name__ == "__main__":
 parser = ArgumentParser()
