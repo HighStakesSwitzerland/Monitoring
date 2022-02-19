@@ -228,7 +228,7 @@ class GetData(Thread):
             logging.critical(f"{self.VALIDATOR}: ORACLE IS STUCK: {oracle_height}")
             self.oracle_status = f"ORACLE IS STUCK: {oracle_height}"
         else:
-            self.oracle_status =  "OK"
+            self.oracle_status =  f"Total missed votes: {self.missed_votes} "
 
         self.missed_votes = new_missed_votes
 
