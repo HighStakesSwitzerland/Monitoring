@@ -46,7 +46,7 @@ class GetData(Thread):
 
         ##INJECTIVE SPECIFIC : INJECTIVE-PEGGO ORCHESTRATOR
         if self.VALIDATOR == 'injective':
-            self.peggo_status = ''
+            self.peggo_status = 'OK'
             address = 'inj16gspgcwx82paq5h69knxyatqk3th3nfryscpqe'
             self.peggo_lastbatch_url = f'https://lcd.injective.network/peggy/v1/batch/last?address={address}'
             self.peggo_valsets_url = f'https://lcd.injective.network/peggy/v1/valset/last?address={address}'
