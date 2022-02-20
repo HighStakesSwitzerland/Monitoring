@@ -37,12 +37,22 @@ class GetData(Thread):
         ##TERRA SPECIFIC : ORACLE API##
         if self.VALIDATOR == 'terra':
             self.oracle_url = 'http://localhost:1317/oracle/voters/terravaloper1uymwfafhq8fruvcjq8k67a29nqzrxnv9m6m427/miss'
-            self.oracle_status = "OK"
+            self.oracle_status = ""
             try:
                 self.missed_votes = int(requests.get(self.oracle_url).json()['result'])
             except:
                 self.missed_votes = 0
             self.timeout = 0
+
+        ##INJECTIVE SPECIFIC : INJECTIVE-PEGGO ORCHESTRATOR
+        if self.VALIDATOR == 'injective':
+            self.peggo_status = ''
+            address = 'inj16gspgcwx82paq5h69knxyatqk3th3nfryscpqe'
+            self.peggo_lastbatch_url = f'https://lcd.injective.network/peggy/v1/batch/last?address={address}'
+            self.peggo_valsets_url = f'https://lcd.injective.network/peggy/v1/valset/last?address={address}'
+            self.peggo_last_observed_nonce_url = 'https://lcd.injective.network/peggy/v1/module_state'
+            self.peggo_last_claimed_event_url = f'https://lcd.injective.network/peggy/v1/oracle/event/{address}'
+
 
         ###define the urls to get the json data
         self.status_url = f"http://localhost:{self.PORT}/status"
@@ -75,6 +85,10 @@ class GetData(Thread):
         @self.app.get(f"/{self.VALIDATOR}/oracle_status")
         def oracle_status():
             return self.oracle_status
+
+        @self.app.get(f"/{self.VALIDATOR}/peggo")
+        def peggo():
+            return self.peggo_status
 
     def run(self):
 
@@ -127,9 +141,11 @@ class GetData(Thread):
                         else:
                             self.timeout += 1
 
-                    print("SLEEPING 7 SECONDS")
+                    #verify the injective Peggo orchestrator status
+                    if self.VALIDATOR == 'injective':
+                        self.injective_peggo()
+
                     sleep(7)
-            print("SLEEPING 6 SECONDS")
             sleep(6) #if the validator is down, 7s overall between checks.
 
     def get_signatures_data(self):
@@ -231,6 +247,33 @@ class GetData(Thread):
             self.oracle_status =  f"Total missed votes: {self.missed_votes} "
 
         self.missed_votes = new_missed_votes
+
+    def injective_peggo(self):
+        try:
+            batch = requests.get(self.peggo_lastbatch_url).json()['batch']
+            if batch: #should be None is working fine
+                self.peggo_status = f"Batch pending: {batch}"
+                return
+            valsets = requests.get(self.peggo_valsets_url).json()['valsets']
+            if valsets:
+                self.peggo_status = f"Valsets pending: {valsets}"
+                return
+            lon = int(requests.get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
+            lce = int(requests.get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
+            if not lon - lce == 0:
+                self.peggo_status = f"Peggo is late: LON={lon}, LCE={lce}"
+                return
+
+            self.peggo_status = "OK"
+            return
+
+        except:
+            self.peggo_status = 'No data'
+            return
+
+
+
+
 
 #if __name__ == "__main__":
 parser = ArgumentParser()
