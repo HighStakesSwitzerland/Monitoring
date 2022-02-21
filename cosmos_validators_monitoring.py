@@ -46,6 +46,7 @@ class GetData(Thread):
 
         ##INJECTIVE SPECIFIC : INJECTIVE-PEGGO ORCHESTRATOR
         if self.VALIDATOR == 'injective':
+            self.timeout = 0
             self.peggo_status = 'OK'
             address = 'inj16gspgcwx82paq5h69knxyatqk3th3nfryscpqe'
             self.peggo_lastbatch_url = f'https://lcd.injective.network/peggy/v1/batch/last?address={address}'
@@ -142,9 +143,13 @@ class GetData(Thread):
                             self.timeout += 1
 
                     #verify the injective Peggo orchestrator status
+                    #probably not much point checking at each loop.
                     if self.VALIDATOR == 'injective':
-                        self.injective_peggo()
-
+                        if self.timeout == 10:
+                            self.injective_peggo()
+                            self.timeout = 0
+                        else:
+                            self.timeout += 1
                     sleep(7)
             sleep(6) #if the validator is down, 7s overall between checks.
 
@@ -258,11 +263,12 @@ class GetData(Thread):
             if valsets:
                 self.peggo_status = f"Valsets pending: {valsets}"
                 return
-            lon = int(requests.get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
-            lce = int(requests.get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
-            if not lon - lce == 0:
-                self.peggo_status = f"Peggo is late: LON={lon}, LCE={lce}"
-                return
+            #THE BELOW IS NOT IMPLEMENTED CURRENTLY.
+            # lon = int(requests.get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
+            # lce = int(requests.get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
+            # if not lon - lce == 0:
+            #     self.peggo_status = f"Peggo is late: LON={lon}, LCE={lce}"
+            #     return
 
             self.peggo_status = "OK"
             return
