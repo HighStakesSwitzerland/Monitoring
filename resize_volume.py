@@ -25,32 +25,39 @@ class ResizeVolume:
     service = args.service
     self.service_state = args.service_state #OK, WARNING, UNKNOWN, CRITICAL
     self.service_state_type = args.service_state_type #SOFT OR HARD
-    #host and service combination allows to identify the concerned volume. Currently there is only one volume per host.
-    if self.host == 'DIGITALOCEAN-1':
-      if service == 'Check Disk Space 2':
-        self.volume_id = do_volume_id_1
-        self.mount_point = do_volume_1_mount_point
-      self.ip = do_ip_1
-    elif self.host == 'DIGITALOCEAN-2':
-      if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
-        self.volume_id = do_volume_id_2
-        self.mount_point = do_volume_2_mount_point
-      self.ip = do_ip_2
+    #host and service combination allows to identify the concerned volume.
+    #host can be 'DIGITALOCEAN_1', service for example 'Check Disk Space 2'. Take the digit from the service to identify the disk.
 
-    elif self.host == 'HETZNER-1':
-      if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
-        self.volume_id = hz_volume_id_1
-        self.mount_point = hz_volume_1_mount_point
-      self.ip = hz_ip_1
+    self.ip = eval(f"{self.host}_IP")   #this is ugly.
+    self.volume_id = eval(f"{self.host}_VOLID_{service[-1]}")
+    self.mount_point = eval(f"{self.host}_MOUNTPOINT_{service[-1]}")
 
-    elif self.host == 'HETZNER-2':
-      if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
-        self.volume_id = hz_volume_id_2
-        self.mount_point = hz_volume_2_mount_point
-      elif service == 'Check Disk Space 3':
-        self.volume_id = hz_volume_id_3
-        self.mount_point = hz_volume_3_mount_point
-      self.ip = hz_ip_2
+
+    # if self.host == 'DIGITALOCEAN_1':
+    #   if service == 'Check Disk Space 2':
+    #     self.volume_id = do_volume_id_1
+    #     self.mount_point = do_volume_1_mount_point
+    #   self.ip = do_ip_1
+    # elif self.host == 'DIGITALOCEAN-2':
+    #   if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
+    #     self.volume_id = do_volume_id_2
+    #     self.mount_point = do_volume_2_mount_point
+    #   self.ip = do_ip_2
+    #
+    # elif self.host == 'HETZNER-1':
+    #   if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
+    #     self.volume_id = hz_volume_id_1
+    #     self.mount_point = hz_volume_1_mount_point
+    #   self.ip = hz_ip_1
+    #
+    # elif self.host == 'HETZNER-2':
+    #   if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
+    #     self.volume_id = hz_volume_id_2
+    #     self.mount_point = hz_volume_2_mount_point
+    #   elif service == 'Check Disk Space 3':
+    #     self.volume_id = hz_volume_id_3
+    #     self.mount_point = hz_volume_3_mount_point
+    #   self.ip = hz_ip_2
 
     if 'DIGITALOCEAN' in self.host:
       self.headers = {'Authorization': f'Bearer {do_token}'} #authorization header for the API calls
@@ -90,7 +97,7 @@ class ResizeVolume:
 
       if isclose(os_size, current_size, abs_tol=5): #both sizes are close enough, so we can proceed
         #POST request to resize the volume (add 15G)
-        data = {'type':'resize','size_gigabytes': current_size + 15, "region": f'{do_region}'}
+        data = {'type':'resize','size_gigabytes': current_size + 15, "region": f'{DIGITALOCEAN_REGION}'}
         result = requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions', headers=self.headers, data=dumps(data), timeout=30).json()
 
         if result['action']['status'] == 'done':

@@ -17,6 +17,8 @@ fi
 
 apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wget bc gawk dc build-essential snmp libnet-snmp-perl gettext xinetd python3-pip
 
+python3 -m pip install fastapi uvicorn
+
 wget --no-check-certificate -O nagios-plugins.tar.gz https://github.com/nagios-plugins/nagios-plugins/archive/release-2.3.3.tar.gz
 wget https://github.com/NagiosEnterprises/nrpe/releases/download/nrpe-4.0.2/nrpe-4.0.2.tar.gz
 
@@ -52,8 +54,6 @@ cp ../systemd_service /etc/systemd/system/monitoring_api.service
 systemctl daemon-reload && systemctl enable monitoring_api.service && systemctl start monitoring_api.service
 
 systemctl enable nrpe.service && systemctl start nrpe.service
-
-python3 -m pip install fastapi uvicorn
 
 ###remove obsolete files and folders
 cd ..
