@@ -29,8 +29,8 @@ class ResizeVolume:
     #host can be 'DIGITALOCEAN_1', service for example 'Check Disk Space 2'. Take the digit from the service to identify the disk.
 
     self.ip = eval(f"{self.host}_IP")   #this is ugly.
-    self.volume_id = eval(f"{self.host}_VOLID_{service[-1]}")
-    self.mount_point = eval(f"{self.host}_MOUNTPOINT_{service[-1]}")
+    self.volume_id = eval(f"{self.host}_VOLID_{service.split()[-1]}")
+    self.mount_point = eval(f"{self.host}_MOUNTPOINT_{service.split()[-1]}")
 
 
     # if self.host == 'DIGITALOCEAN_1':
