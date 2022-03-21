@@ -1,5 +1,11 @@
 #!/bin/bash
 
+
+###RUN THIS SCRIPT IF YOU ARE GOING TO USE PROMETHEUS (e.g. with Grafana)###
+
+#you will need to update /etc/prometheus/prometheus.yml afterwards, adding localhost:PORT at the end (the port set in config.toml)#
+
+
 curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi -
 tar xf prometheus*.tar.gz
 cd prometheus*/
