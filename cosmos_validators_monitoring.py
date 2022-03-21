@@ -35,8 +35,9 @@ class GetData(Thread):
         self.block_delay = 0
 
         ##TERRA SPECIFIC : ORACLE API##
+        self.terravaloper = ''
         if self.VALIDATOR == 'terra':
-            self.oracle_url = 'http://localhost:1317/oracle/voters/terravaloper1uymwfafhq8fruvcjq8k67a29nqzrxnv9m6m427/miss'
+            self.oracle_url = f"http://localhost:1317/oracle/voters/{self.terravaloper}/miss"
             self.oracle_status = ""
             try:
                 self.missed_votes = int(requests.get(self.oracle_url).json()['result'])
@@ -45,12 +46,12 @@ class GetData(Thread):
             self.timeout = 0
 
         ##INJECTIVE SPECIFIC : INJECTIVE-PEGGO ORCHESTRATOR
+        self.injective_address = ''
         if self.VALIDATOR == 'injective':
             self.timeout = 0
             self.peggo_status = 'OK'
-            address = 'inj16gspgcwx82paq5h69knxyatqk3th3nfryscpqe'
-            self.peggo_lastbatch_url = f'https://lcd.injective.network/peggy/v1/batch/last?address={address}'
-            self.peggo_valsets_url = f'https://lcd.injective.network/peggy/v1/valset/last?address={address}'
+            self.peggo_lastbatch_url = f"https://lcd.injective.network/peggy/v1/batch/last?address={self.injective_address}"
+            self.peggo_valsets_url = f"https://lcd.injective.network/peggy/v1/valset/last?address={self.injective_address}"
             self.peggo_last_observed_nonce_url = 'https://lcd.injective.network/peggy/v1/module_state'
             self.peggo_last_claimed_event_url = f'https://lcd.injective.network/peggy/v1/oracle/event/{address}'
 
