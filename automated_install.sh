@@ -46,7 +46,7 @@ systemctl restart xinetd.service
 
 ### UPDATE THE DISK CONFIG HERE (/dev/DISK_NAME)
 #you can also update the warning/critical thresholds to your liking. Default is warning at 15Go free, critical at 5Go.
-echo 'command[check_disk_1]=/usr/local/nagios/libexec/check_disk -w 15000 -c 5000 -p /dev/vda1' >> /usr/local/nagios/etc/nrpe.cfg
+echo 'command[check_disk_1]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /dev/vda1' >> /usr/local/nagios/etc/nrpe.cfg
 ##ADD OTHER DISKS AS REQUIRED: ***MIND THE COMMAND NAME NUMBERING***
 #echo 'command[check_disk_2]=/usr/local/nagios/libexec/check_disk -w 15000 -c 5000 -p /dev/sdb' >> /usr/local/nagios/etc/nrpe.cfg
 echo 'command[check_icmp]=/usr/local/nagios/libexec/check_icmp localhost' >> /usr/local/nagios/etc/nrpe.cfg
