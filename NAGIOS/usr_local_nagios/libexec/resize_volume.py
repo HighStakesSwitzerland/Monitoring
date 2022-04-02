@@ -33,32 +33,6 @@ class ResizeVolume:
     self.mount_point = eval(f"{self.host}_MOUNTPOINT_{service.split()[-1]}")
 
 
-    # if self.host == 'DIGITALOCEAN_1':
-    #   if service == 'Check Disk Space 2':
-    #     self.volume_id = do_volume_id_1
-    #     self.mount_point = do_volume_1_mount_point
-    #   self.ip = do_ip_1
-    # elif self.host == 'DIGITALOCEAN-2':
-    #   if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
-    #     self.volume_id = do_volume_id_2
-    #     self.mount_point = do_volume_2_mount_point
-    #   self.ip = do_ip_2
-    #
-    # elif self.host == 'HETZNER-1':
-    #   if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
-    #     self.volume_id = hz_volume_id_1
-    #     self.mount_point = hz_volume_1_mount_point
-    #   self.ip = hz_ip_1
-    #
-    # elif self.host == 'HETZNER-2':
-    #   if service == 'Check Disk Space 2':   #code could be more condensed but perhaps later on we'll have multiple volumes per host.
-    #     self.volume_id = hz_volume_id_2
-    #     self.mount_point = hz_volume_2_mount_point
-    #   elif service == 'Check Disk Space 3':
-    #     self.volume_id = hz_volume_id_3
-    #     self.mount_point = hz_volume_3_mount_point
-    #   self.ip = hz_ip_2
-
     if 'DIGITALOCEAN' in self.host:
       self.headers = {'Authorization': f'Bearer {do_token}'} #authorization header for the API calls
     elif 'HETZNER' in self.host:
@@ -86,7 +60,7 @@ class ResizeVolume:
       #no need to keep buying additional space if it's not actually used.
       os_size = 0
       try:
-        os_size = round(float(check_output(["ssh", f"root@{self.ip}", f'df | grep {self.mount_point}'], timeout=10).decode(
+        os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'df | grep {self.mount_point}'], timeout=10).decode(
           'utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
       except Exception as e:
         #well I don't know. Do nothing anyway.
@@ -121,7 +95,7 @@ class ResizeVolume:
 
     os_size = 0
     try:
-      os_size = round(float(check_output(["ssh", f"root@{self.ip}", f'df | grep {self.mount_point}'], timeout=10).decode(
+      os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'df | grep {self.mount_point}'], timeout=10).decode(
         'utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
     except Exception as e:
       print(e)
@@ -152,7 +126,7 @@ class ResizeVolume:
       command = 'resize2fs'
     else:
       command = 'xfs_growfs'
-    Popen(["ssh", f"root@{self.ip}", f"{command} {self.mount_point}"])
+    Popen(["ssh", f"{ssh_account}@{self.ip}", f"{command} {self.mount_point}"])
     return
 
 parser = ArgumentParser()

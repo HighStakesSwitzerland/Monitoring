@@ -1,4 +1,4 @@
-# Nagios-Config-Scripts
+# Monitoring Deployment Scripts and Configuration Files (Nagios & Grafana) for Cosmos-Based Blockchains.
 This repository contains configuration files for a Nagios 4 deployment, that would monitor one to multiple Cosmos/Tendermint-based validators:
 - Nagios server configuration files, which <b>must be updated to match one's actual setup</b>, 
 - Remote server(s) setup and scripts (API, NRPE),
@@ -20,7 +20,7 @@ Avoiding being slashed is also a nice perk.
 
 <b>MONITORED METRICS</b>
 
-- <code>Disk space</code>: WARNING at 15 Go left, CRITICAL at 5 Go. (by default, alerts are sent on CRITICAL state only)
+- <code>Disk space</code>: WARNING at 6 Go left, CRITICAL at 3 Go. (by default, alerts are sent on CRITICAL state only)
 - The Python script creates API endpoints allowing to monitor the following items:
   - <code>Validator Status</code>: whether the node is running (OK) or not (CRITICAL). 
   - <code>Block Delay</code>: delta between the node's block timestamp and the official timestamp. WARNING if above 2s (and usually it's about 0.1s max).
@@ -50,12 +50,20 @@ This requires enabling the "Access for less secure apps" on this account, so bet
 - IF YOU WISH TO RECEIVE DISCORD ALERTS:
   - In <code>libexec</code> with the NAGIOS folder:
     - The <code>discord_XXX_alerts.py</code> files are exacty what their names suggest. Update with your Discord webhook if you wish to receive such alerts. Otherwise, don't copy them and delete the user 'discord' and all mention of it in Nagios' <code>/objects/*.cfg</code> files.
+- <b>IMPORTANT</b>: by default, Nagios alerts are sent to Discord primarily. If a service/host is still in CRITICAL state after 2 notifications, then an escalation is triggered and alerts are sent by email.<br>
+Do NOT overlook the email alerts. :) 
 - You <b>must</b> update the provided files to match your local setup:<br>
   --><code>htpasswd.users</code><br>
   --><code>cgi.cfg</code><br>
   -->All the files in <code>/etc/objects/</code> except <code>commands.cfg</code> which should work as is.<br>
   Verify that the config is correct with <code>/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg</code> then restart Nagios.<br>
-  You <b>must</b> obviously ensure that the network configuration is fine (NRPE port open on the remote hosts in particular)<br>
-- Quick note though: this deployment requires updating the firewall.
+- You <b>must</b> obviously ensure that the network configuration is fine (NRPE port open on the remote hosts in particular)<br>
+
+<b>THE DISK RESIZE SCRIPT</b>
+
+- An event_handler in Nagios allows to automatically resize Cloud volumes when they are close to be full. The disk space being the main cost when it comes to cloud, it's best not to buy storage that will remain unused for a long time.
+- The python script will use the Cloud service API to add 5G to a volume when it has only 3G left (just in case it fails, to give enough time to resolve manually).
+- Then it connects to the server in SSH and passes the command to expand the filesystem.
+- This is most definitely a security problem, although the SSH account that is used is a very limited one that can only execute this command (using <code>rbash</code> and <code>sudoers</code>) ; working on a more secure solution.
 
 - Don't hesitate to ping us on Discord: <code>Thomas | High Stakes#0885</code> or <code>Joe | High Stakes#0880</code>
