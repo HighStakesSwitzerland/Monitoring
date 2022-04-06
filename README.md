@@ -31,10 +31,8 @@ Other metrics and endpoints can easily be added in the script, and the correspon
 
 <b>INSTRUCTIONS - CLIENT SIDE</b>
 
-- Scripts are provided to automate the installation and deployment: <code>automated_install.sh</code> and <code>prometheus_install.sh</code> ON THE CLIENTS/MONITORED MACHINES, NOT FOR NAGIOS SERVER.
-- <b>The former has to be modified before execution to set the Nagios server IP and adjust the disk configuration.</b><br>
-It will install all necessary packages and dependencies, move the relevant files to their respective places and start the services.
-- The latter is useful if you intend to activate prometheus in <code>config.toml</code>. It will install Prometheus as well as <code>node_exporter</code> to get the server metrics.
+- Update the items in <code>config.sh</code> then just run <code>automated_install.sh</code>.
+- You can also run <code>prometheus_install.sh</code> if you intend to use Prometheus (with Grafana for example).
 - A Grafana template dashboard is provided in the GRAFANA folder.
 - <b>TERRA & INJECTIVE specific</b>: if running an Oracle for Terra and a Peggo Orchestrator, these can be monitored as well. Update the addresses in lines 38 and 49 of <code>cosmos_validators_monitoring.py</code>.
 

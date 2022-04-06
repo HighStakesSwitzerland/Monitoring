@@ -60,7 +60,7 @@ class ResizeVolume:
       #no need to keep buying additional space if it's not actually used.
       os_size = 0
       try:
-        os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'df | grep {self.mount_point}'], timeout=10).decode(
+        os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'sudo df | sudo grep {self.mount_point}'], timeout=10).decode(
           'utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
       except Exception as e:
         #well I don't know. Do nothing anyway.
@@ -70,8 +70,8 @@ class ResizeVolume:
       print("CURRENT SIZE & OS SIZE: ", current_size, os_size)
 
       if isclose(os_size, current_size, abs_tol=5): #both sizes are close enough, so we can proceed
-        #POST request to resize the volume (add 15G)
-        data = {'type':'resize','size_gigabytes': current_size + 15, "region": f'{DIGITALOCEAN_REGION}'}
+        #POST request to resize the volume (add 5G)
+        data = {'type':'resize','size_gigabytes': current_size + 5, "region": f'{DIGITALOCEAN_REGION}'}
         result = requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions', headers=self.headers, data=dumps(data), timeout=30).json()
 
         if result['action']['status'] == 'done':
@@ -95,7 +95,7 @@ class ResizeVolume:
 
     os_size = 0
     try:
-      os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'df | grep {self.mount_point}'], timeout=10).decode(
+      os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'sudo df | sudo grep {self.mount_point}'], timeout=10).decode(
         'utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
     except Exception as e:
       print(e)
@@ -104,7 +104,7 @@ class ResizeVolume:
     print("CURRENT SIZE & OS SIZE: ", current_size, os_size)
 
     if isclose(os_size, current_size, abs_tol=5):
-      data = {'size': current_size + 15}
+      data = {'size': current_size + 5}
       requests.post(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}/actions/resize', headers=self.headers,
                              data=dumps(data), timeout=30).json()
 
@@ -126,7 +126,7 @@ class ResizeVolume:
       command = 'resize2fs'
     else:
       command = 'xfs_growfs'
-    Popen(["ssh", f"{ssh_account}@{self.ip}", f"{command} {self.mount_point}"])
+    Popen(["ssh", f"{ssh_account}@{self.ip}", f"sudo {command} {self.mount_point}"])
     return
 
 parser = ArgumentParser()

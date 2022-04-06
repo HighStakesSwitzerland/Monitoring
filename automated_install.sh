@@ -3,15 +3,14 @@
 #THIS SCRIPT SETS UP THE CLIENT, = A NODE THAT IS MONITORED BY NAGIOS.
 #Nagios' config should be updated with the node's information (in services.cfg and hosts.cfg).
 
-###You must cd into the cloned repo (Nagios-Config-Scripts) before running this script.###
+###You must cd into the cloned repo (Monitoring) before running this script.###
 
-###UPDATE THE FILE systemd_service PRIOR TO RUNNING THIS SCRIPT !!###
+###UPDATE THE FILE config.sh PRIOR TO RUNNING THIS SCRIPT !!###
 ###UPDATE THE DISK CONFIG BELOW###
 
-NAGIOS_SERVER_IP="YOUR IP HERE" #update this as well, yes.
+#load all the variables from config.sh
 
-NRPE_PORT=58888 #update this to whatever works for you - or comment out so that the default port 5666 is
-#note that this must, obviously, match the NRPE config in the Nagios server.
+source config.sh
 
 if [ $EUID != 0 ]; then
     echo "Please run this script as root"
@@ -46,14 +45,19 @@ systemctl restart xinetd.service
 
 ### UPDATE THE DISK CONFIG HERE (/dev/DISK_NAME)
 #you can also update the warning/critical thresholds to your liking. Default is warning at 15Go free, critical at 5Go.
-echo 'command[check_disk_1]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /dev/vda1' >> /usr/local/nagios/etc/nrpe.cfg
+echo  >> /usr/local/nagios/etc/nrpe.cfg
 ##ADD OTHER DISKS AS REQUIRED: ***MIND THE COMMAND NAME NUMBERING***
-#echo 'command[check_disk_2]=/usr/local/nagios/libexec/check_disk -w 15000 -c 5000 -p /dev/sdb' >> /usr/local/nagios/etc/nrpe.cfg
-echo 'command[check_icmp]=/usr/local/nagios/libexec/check_icmp localhost' >> /usr/local/nagios/etc/nrpe.cfg
+#echo 'command[check_disk_2]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /dev/sdb' >> /usr/local/nagios/etc/nrpe.cfg
+
+for i in "${DISK_LIST[@]}"; do
+  echo $i >> /usr/local/nagios/etc/nrpe.cfg
+done
+
 echo 'command[check_api]=/usr/local/nagios/libexec/check_api $ARG1$' >> /usr/local/nagios/etc/nrpe.cfg
 sed -i 's/dont_blame_nrpe=0/dont_blame_nrpe=1/g' /usr/local/nagios/etc/nrpe.cfg
 sed -i "s/allowed_hosts=127.0.0.1,::1/allowed_hosts=127.0.0.1,::1,$NAGIOS_SERVER_IP/g" /usr/local/nagios/etc/nrpe.cfg
 
+sed -i "s/-i validator_name1 PORT1 -i validator_name2 PORT2 etc./$VALIDATORS/g"
 cp ../systemd_service /etc/systemd/system/monitoring_api.service
 systemctl daemon-reload && systemctl enable monitoring_api.service && systemctl start monitoring_api.service
 

@@ -4,7 +4,7 @@
 ###RUN THIS SCRIPT IF YOU ARE GOING TO USE PROMETHEUS (e.g. with Grafana)###
 
 #you will need to update /etc/prometheus/prometheus.yml afterwards, adding localhost:PORT at the end (the port set in config.toml)#
-
+source config.sh
 
 curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi -
 tar xf prometheus*.tar.gz
@@ -80,6 +80,10 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
+
+for i in "${PROMETHEUS_PORTS[@]}"; do
+  sed -i "s/\"localhost:9090\"/\"localhost:9090\",\"localhost:$i\"/g" /etc/prometheus/prometheus.yml
+done
 
 systemctl daemon-reload
 systemctl enable prometheus

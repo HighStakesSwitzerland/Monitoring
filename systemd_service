@@ -1,5 +1,5 @@
-#Place in /etc/systemd/system/
-#Update the path and arguments then enable and start the service.
+#NO NEED TO MODIFY THIS, IT WILL BE UPDATED AND APPLIED BY THE automated_install.sh SCRIPT.
+#Just update the path if not the default one.
 
 [Unit]
 Description=Start the monitoring api Python script
@@ -7,7 +7,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=python3 /root/Nagios-Config-Scripts/cosmos_validators_monitoring.py -i validator_name1 PORT1 -i validator_name2 PORT2 etc.
+ExecStart=python3 /root/Monitoring/cosmos_validators_monitoring.py -i validator_name1 PORT1 -i validator_name2 PORT2 etc.
 
 [Install]
 WantedBy=multi-user.target
