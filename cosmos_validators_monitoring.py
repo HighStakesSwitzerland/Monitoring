@@ -53,7 +53,7 @@ class GetData(Thread):
             self.peggo_lastbatch_url = f"https://lcd.injective.network/peggy/v1/batch/last?address={self.injective_address}"
             self.peggo_valsets_url = f"https://lcd.injective.network/peggy/v1/valset/last?address={self.injective_address}"
             self.peggo_last_observed_nonce_url = 'https://lcd.injective.network/peggy/v1/module_state'
-            self.peggo_last_claimed_event_url = f'https://lcd.injective.network/peggy/v1/oracle/event/{address}'
+            self.peggo_last_claimed_event_url = f'https://lcd.injective.network/peggy/v1/oracle/event/{self.injective_address}'
 
 
         ###define the urls to get the json data
