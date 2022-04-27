@@ -57,7 +57,7 @@ echo 'command[check_api]=/usr/local/nagios/libexec/check_api $ARG1$' >> /usr/loc
 sed -i 's/dont_blame_nrpe=0/dont_blame_nrpe=1/g' /usr/local/nagios/etc/nrpe.cfg
 sed -i "s/allowed_hosts=127.0.0.1,::1/allowed_hosts=127.0.0.1,::1,$NAGIOS_SERVER_IP/g" /usr/local/nagios/etc/nrpe.cfg
 
-sed -i "s/-i validator_name1 PORT1 -i validator_name2 PORT2 etc./$VALIDATORS/g"
+sed -i "s/-i validator_name1 PORT1 -i validator_name2 PORT2 etc./$VALIDATORS/g" ../systemd_service
 cp ../systemd_service /etc/systemd/system/monitoring_api.service
 systemctl daemon-reload && systemctl enable monitoring_api.service && systemctl start monitoring_api.service
 
