@@ -1,12 +1,14 @@
 #!/bin/bash
 
+###UPDATE THE FILE config.sh PRIOR TO RUNNING THIS SCRIPT !!###
+#Nothing to update here.
+
 #THIS SCRIPT SETS UP THE CLIENT, = A NODE THAT IS MONITORED BY NAGIOS.
 #Nagios' config should be updated with the node's information (in services.cfg and hosts.cfg).
 
 ###You must cd into the cloned repo (Monitoring) before running this script.###
 
-###UPDATE THE FILE config.sh PRIOR TO RUNNING THIS SCRIPT !!###
-###UPDATE THE DISK CONFIG BELOW###
+
 
 #load all the variables from config.sh
 
@@ -43,16 +45,14 @@ cp ../check_api /usr/local/nagios/libexec/
 sed -i "s/127.0.0.1 ::1/127.0.0.1 ::1 $NAGIOS_SERVER_IP/g" /etc/xinetd.d/nrpe
 systemctl restart xinetd.service
 
-### UPDATE THE DISK CONFIG HERE (/dev/DISK_NAME)
-#you can also update the warning/critical thresholds to your liking. Default is warning at 15Go free, critical at 5Go.
-echo  >> /usr/local/nagios/etc/nrpe.cfg
-##ADD OTHER DISKS AS REQUIRED: ***MIND THE COMMAND NAME NUMBERING***
-#echo 'command[check_disk_2]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /dev/sdb' >> /usr/local/nagios/etc/nrpe.cfg
+
+### DISK CONFIG ###
 
 for i in "${DISK_LIST[@]}"; do
   echo $i >> /usr/local/nagios/etc/nrpe.cfg
 done
 
+echo 'command[check_icmp]=/usr/local/nagios/libexec/check_icmp localhost' >> /usr/local/nagios/etc/nrpe.cfg
 echo 'command[check_api]=/usr/local/nagios/libexec/check_api $ARG1$' >> /usr/local/nagios/etc/nrpe.cfg
 sed -i 's/dont_blame_nrpe=0/dont_blame_nrpe=1/g' /usr/local/nagios/etc/nrpe.cfg
 sed -i "s/allowed_hosts=127.0.0.1,::1/allowed_hosts=127.0.0.1,::1,$NAGIOS_SERVER_IP/g" /usr/local/nagios/etc/nrpe.cfg
