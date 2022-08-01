@@ -7,6 +7,8 @@ After=network.target
 
 [Service]
 Type=simple
+RuntimeMaxSec=21600s
+Restart=always
 ExecStart=python3 /root/Monitoring/cosmos_validators_monitoring.py -i validator_name1 PORT1 -i validator_name2 PORT2 etc.
 
 [Install]

@@ -24,15 +24,15 @@ apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wg
 python3 -m pip install fastapi uvicorn
 
 wget --no-check-certificate -O nagios-plugins.tar.gz https://github.com/nagios-plugins/nagios-plugins/archive/release-2.3.3.tar.gz
-wget https://github.com/NagiosEnterprises/nrpe/releases/download/nrpe-4.0.2/nrpe-4.0.2.tar.gz
+wget https://github.com/NagiosEnterprises/nrpe/releases/download/nrpe-4.0.3/nrpe-4.0.3.tar.gz
 
-tar xzf nagios-plugins.tar.gz && tar xzf nrpe-4.0.2.tar.gz
+tar xzf nagios-plugins.tar.gz && tar xzf nrpe-4.0.3.tar.gz
 
 useradd nagios && groupadd nagios && usermod -a -G nagios nagios
 
 cd nagios-plugins-release-2.3.3 && ./tools/setup && ./configure && make install
 
-cd ../nrpe-4.0.2 && ./configure --with-nrpe-port=58888 --enable-command-args
+cd ../nrpe-4.0.3 && ./configure --with-nrpe-port=58888 --enable-command-args --with-need-dh=no  #last argument necessary with ssl 3
 
 make all && make install && make install-config && make install-inetd && make install-init
 
@@ -65,4 +65,4 @@ systemctl enable nrpe.service && systemctl start nrpe.service
 
 ###remove obsolete files and folders
 cd ..
-rm -r nagios-plugins* nrpe-4.0.2*
+rm -r nagios-plugins* nrpe-4.0.3*
