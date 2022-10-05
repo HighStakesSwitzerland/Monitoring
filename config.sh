@@ -4,7 +4,7 @@
 
 NAGIOS_SERVER_IP="" #the nagios server IP.
 
-NRPE_PORT=  #update this to whatever works for you - or comment out so that the default port 5666 is
+NRPE_PORT=58888  #update this to whatever works for you - or comment out so that the default port 5666 is used
 #note that this must, obviously, match the NRPE config in the Nagios server.
 
     ###DISK CONFIGURATION###

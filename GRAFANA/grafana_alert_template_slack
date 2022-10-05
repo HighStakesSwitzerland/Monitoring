@@ -1,0 +1,27 @@
+{{ define "slack.default.message" }}
+{{ range . }}
+{{ .Annotations.message }}
+
+{{ with .ValueString }}
+{{- . | reReplaceAll `\[\s` "" | reReplaceAll `\],\s` "\n"  | reReplaceAll `\]` "" | reReplaceAll `labels=.*}` "" | reReplaceAll `value=([0-9\.]+)` "**$1**" }}
+{{ end }}
+{{ end }}
+{{ end }}
+
+{{ define "slack.resolved.message" }}
+
+{{ range . }}
+{{ .Annotations.message }}
+{{ with .ValueString }}
+{{- . | reReplaceAll `\[\s` "" | reReplaceAll `\],\s` "\n"  | reReplaceAll `\]` "" | reReplaceAll `labels=.*}` "" | reReplaceAll `value=([0-9\.]+)` "**$1**" }}
+	{{ end }}
+
+
+{{ end }}
+{{ end }}
+
+
+{{ define "slack" }}
+        {{ if gt (len .Alerts.Firing) 0 }}{{ template "slack.default.message" .Alerts.Firing }}{{ end }}
+        {{ if gt (len .Alerts.Resolved) 0 }}{{ template "slack.resolved.message" .Alerts.Resolved }}{{ end }}
+{{ end }}

@@ -8,6 +8,10 @@
 #"resize_volume.py" and "volume_data.py" must be placed in /usr/local/nagios/libexec/
 ###############
 
+
+#RUN MANUALLY WITH:
+#python3 /usr/local/nagios/libexec/resize_volume.py HETZNER_10 'Check Disk Space SENTINEL' CRITICAL HARD
+
 from time import sleep
 
 import requests
