@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
 import sys
-from discord_webhook import DiscordWebhook, DiscordEmbed
+#from discord_webhook import DiscordWebhook, DiscordEmbed
+from discord import SyncWebhook, Embed
 
 HOOK = "THE DISCORD WEBHOOK LINK HERE: https://......"
 
@@ -24,14 +25,15 @@ def main(nagios_input):
     line2 = f"{nagios_input[2]}\n{nagios_input[4]}"
 
 
-    webhook = DiscordWebhook(url=HOOK)
+    webhook = SyncWebhook.from_url(HOOK)
     # create embed object for webhook
-    embed = DiscordEmbed(title=line1, description=line2, color=codecolor(nagios_input[3]))
-
-    # add embed object to webhook
-    webhook.add_embed(embed)
-
-    webhook.execute()
+    embed = Embed(title=line1, description=line2, color=codecolor(nagios_input[3]))
+    webhook.send("<@CONTACT_ID1>,<@CONTACT_ID2>", embed=embed)  # mind the <> -- the id is in format @45613241654987
+    #
+    # # add embed object to webhook
+    # webhook.add_embed(embed)
+    #
+    # webhook.execute()
 
 main(sys.argv)
 
