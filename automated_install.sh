@@ -14,14 +14,17 @@
 
 source config.sh
 
+if [ -z ${NAGIOS_SERVER_IP} ]; then
+  echo "Missing server IP. Please update config.sh"
+  exit
+fi
+
 if [ $EUID != 0 ]; then
     echo "Please run this script as root"
     exit
 fi
 
-apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wget bc gawk dc build-essential snmp libnet-snmp-perl gettext xinetd python3-pip
-
-python3 -m pip install fastapi uvicorn
+apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wget bc gawk dc build-essential snmp libnet-snmp-perl gettext xinetd python3-pip python3-fastapi python3-uvicorn
 
 wget --no-check-certificate -O nagios-plugins.tar.gz https://github.com/nagios-plugins/nagios-plugins/archive/release-2.3.3.tar.gz
 wget https://github.com/NagiosEnterprises/nrpe/releases/download/nrpe-4.0.3/nrpe-4.0.3.tar.gz

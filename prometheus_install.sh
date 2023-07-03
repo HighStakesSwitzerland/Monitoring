@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 ###RUN THIS SCRIPT IF YOU ARE GOING TO USE PROMETHEUS (e.g. with Grafana)###
 
 #you will need to update /etc/prometheus/prometheus.yml afterwards, adding localhost:PORT at the end (the port set in config.toml)#
@@ -81,9 +80,15 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
+line=$(sed -n '/- targets: \["localhost:9100"\]/p' "/etc/prometheus/prometheus.yml")
+
+
 for i in "${PROMETHEUS_PORTS[@]}"; do
-  sed -i "s/\"localhost:9090\"/\"localhost:9090\",\"localhost:$i\"/g" /etc/prometheus/prometheus.yml
+  line="${line/]/, \"localhost:$i\"]}"
 done
+
+sed -i "s|- targets: \[\"localhost:9100\"\]|$line|" /etc/prometheus/prometheus.yml
+
 
 systemctl daemon-reload
 systemctl enable prometheus
