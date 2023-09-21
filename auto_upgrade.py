@@ -4,14 +4,14 @@ from subprocess import call
 
 previous_height = 0
 
-RPC_port = 26657
-upgrade_height = 1292226
+RPC_port = 46657
+upgrade_height = 14875800
 
-node = 'aura'
-binary = 'aurad'
-build_path = f'/home/aura/{node}/build/{binary}'
-prod_path = f'/home/{node}/go/bin/'
-extra_command = "" #"['rm', '-r', '/home/aura/.aura/wasm/wasm/cache/']
+user = 'shentu'
+binary = 'shentud'
+build_path = f'/home/{user}/shentu/build/{binary}'
+prod_path = f'/home/{user}/go/bin/'
+extra_command = [] #['cp', '-p', f'/home/{user}/shentu/build/exposer', prod_path]
 
 while True:
     try:
@@ -32,7 +32,7 @@ while True:
             exit(1)
 
 # stop the node
-call(['systemctl', 'stop', f'{node}.service'])
+call(['systemctl', 'stop', f'{user}.service'])
 sleep(2)
 call(['cp', '-p', build_path, prod_path])
 
@@ -41,7 +41,7 @@ if extra_command:
 
 sleep(1)
 
-call(['systemctl', 'start', f'{node}.service'])
+call(['systemctl', 'start', f'{user}.service'])
 
 exit(0)
 
