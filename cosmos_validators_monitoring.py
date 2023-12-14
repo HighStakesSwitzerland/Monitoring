@@ -49,11 +49,23 @@ class GetData(Thread):
         self.injective_address = ''
         if self.VALIDATOR == 'injective':
             self.timeout = 0
-            self.peggo_status = 'OK'
+            self.peggo_status = ''
             self.peggo_lastbatch_url = f"https://lcd.injective.network/peggy/v1/batch/last?address={self.injective_address}"
             self.peggo_valsets_url = f"https://lcd.injective.network/peggy/v1/valset/last?address={self.injective_address}"
             self.peggo_last_observed_nonce_url = 'https://lcd.injective.network/peggy/v1/module_state'
             self.peggo_last_claimed_event_url = f'https://lcd.injective.network/peggy/v1/oracle/event/{self.injective_address}'
+            self.injective_peggo()
+
+        ##UMEE SPECIFIC : PEGGO ORCHESTRATOR
+        self.umee_address = 'umeevaloper1rtdcc3ukvf80xzqk00nsj5v06edf39q0yxe2ve'
+        if self.VALIDATOR == 'umee':
+            self.timeout = 0
+            self.peggo_status = 0
+            self.missed_url = f"http://localhost:1317/umee/oracle/v1/validators/{self.umee_address}/miss"
+            self.window_url = f"http://localhost:1317/umee/oracle/v1/slash_window"
+            missed = int(requests.get(self.missed_url).json()['miss_counter'])
+            window = int(requests.get(self.window_url).json()['window_progress'])
+            self.peggo_ratio = missed/window
 
 
         ###define the urls to get the json data
@@ -264,22 +276,44 @@ class GetData(Thread):
             if valsets:
                 self.peggo_status = f"Valsets pending: {valsets}"
                 return
-            #THE BELOW IS NOT IMPLEMENTED CURRENTLY.
+
+            lon = int(requests.get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
+            lce = int(requests.get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
+            if lon < lce == 1:
+                self.peggo_status = f"Peggo is late: LON={lon}, LCE={lce}"
+                return
+            elif lon < lce > 1:
+                self.peggo_status = f"Peggo is f'{lon}-{lce}' behind"
+                return
+
+            self.peggo_status = "OK"
+
+        except:
+            self.peggo_status = 'No data'
+
+        return
+
+    def umee_peggo(self):
+        try:
+            missed = int(requests.get(self.missed_url).json()['miss_counter'])
+            window = int(requests.get(self.window_url).json()['window_progress'])
+            # misses = self.missed/self.window
+            new_ratio = missed / window
+            self.peggo_status = (new_ratio - self.peggo_ratio) / new_ratio * 100  # round(self.peggo_ratio - new_ratio, 6) #f'{self.peggo_ratio - new_ratio:.5f}'
+            self.peggo_ratio = new_ratio
+            # self.peggo_status = -1 if misses > 0.20 else (misses if misses > 0.05 else "OK")
+            return
+            # THE BELOW IS NOT IMPLEMENTED CURRENTLY.
             # lon = int(requests.get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
             # lce = int(requests.get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
             # if not lon - lce == 0:
             #     self.peggo_status = f"Peggo is late: LON={lon}, LCE={lce}"
             #     return
 
-            self.peggo_status = "OK"
-            return
 
         except:
-            self.peggo_status = 'No data'
+            self.peggo_status = -2  # 'No data'
             return
-
-
-
 
 
 #if __name__ == "__main__":
