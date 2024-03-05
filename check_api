@@ -66,6 +66,17 @@ elif [[ $1 =~ (peggo) ]]; then
           exit 2
   fi
 
+elif [[ $1 =~ (yoda) ]]; then
+        if [[ $status =~ (Active) ]]; then
+          echo $status
+          exit 0
+  elif [[ $status =~ (Inactive) ]]; then
+          echo $status
+          exit 2
+  elif [[ $status =~ (No data) ]]; then
+          echo $status
+          exit 1
+  fi
 
 #UMEE VOTE MISSES RATIO
 #elif [[ $1 =~ (peggo) ]]; then

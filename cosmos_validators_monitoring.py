@@ -2,7 +2,7 @@ import logging
 from math import isclose
 from threading import Thread
 from time import sleep
-import requests
+from requests import get
 from datetime import datetime
 
 import uvicorn
@@ -40,7 +40,7 @@ class GetData(Thread):
             self.oracle_url = f"http://localhost:1317/oracle/voters/{self.terravaloper}/miss"
             self.oracle_status = ""
             try:
-                self.missed_votes = int(requests.get(self.oracle_url).json()['result'])
+                self.missed_votes = int(get(self.oracle_url).json()['result'])
             except:
                 self.missed_votes = 0
             self.timeout = 0
@@ -57,16 +57,22 @@ class GetData(Thread):
             self.injective_peggo()
 
         ##UMEE SPECIFIC : PEGGO ORCHESTRATOR
-        self.umee_address = 'umeevaloper1rtdcc3ukvf80xzqk00nsj5v06edf39q0yxe2ve'
+        self.umee_address = ''
         if self.VALIDATOR == 'umee':
             self.timeout = 0
             self.peggo_status = 0
             self.missed_url = f"http://localhost:1317/umee/oracle/v1/validators/{self.umee_address}/miss"
             self.window_url = f"http://localhost:1317/umee/oracle/v1/slash_window"
-            missed = int(requests.get(self.missed_url).json()['miss_counter'])
-            window = int(requests.get(self.window_url).json()['window_progress'])
+            missed = int(get(self.missed_url).json()['miss_counter'])
+            window = int(get(self.window_url).json()['window_progress'])
             self.peggo_ratio = missed/window
 
+
+        ##BAND SPECIFIC : YODA
+        self.band_address = ''
+        if self.VALIDATOR == 'bandprotocol':
+            self.yoda_status = ''
+            self.yoda_status_url = f"http://localhost:1318/oracle/v1/validators/{self.band_address}"
 
         ###define the urls to get the json data
         self.status_url = f"http://localhost:{self.PORT}/status"
@@ -104,12 +110,16 @@ class GetData(Thread):
         def peggo():
             return self.peggo_status
 
+        @self.app.get(f"/{self.VALIDATOR}/yoda")
+        def yoda():
+            return self.yoda_status
+
     def run(self):
 
         while True:
             #Get the validator address
             try: #if the node is down, or self.PORT is wrong, will trigger an exception.
-                self.status_data = requests.get(self.status_url).json()
+                self.status_data = get(self.status_url).json()
                 self.validator_address = self.status_data['result']['validator_info']['address']
                 self.validator_is_up = True
             except:
@@ -121,7 +131,7 @@ class GetData(Thread):
             sleep(1)
             while self.validator_is_up:
                 try:
-                    self.status_data = requests.get(self.status_url).json()
+                    self.status_data = get(self.status_url).json()
                 except:
                     self.validator_is_up = False
                     logging.critical(f"{self.VALIDATOR} is down")
@@ -163,13 +173,28 @@ class GetData(Thread):
                             self.timeout = 0
                         else:
                             self.timeout += 1
+
+                    #verify the umee Peggo orchestrator status
+                    if self.VALIDATOR == 'umee':
+                        if self.timeout == 10:
+                            self.umee_peggo()
+                            self.timeout = 0
+                        else:
+                            self.timeout += 1
+
+                    # verify Band'd yoda
+                    if self.VALIDATOR == 'bandprotocol':
+                        #if self.timeout == 10:
+                        self.band_yoda()
+
                     sleep(7)
+
             sleep(6) #if the validator is down, 7s overall between checks.
 
     def get_signatures_data(self):
         """return the details of the block signature by all the bonded validators"""
         try:
-            return requests.get(self.signatures_url).json()
+            return get(self.signatures_url).json()
         except:
             self.validator_is_up = False
             logging.critical(f"{self.VALIDATOR}: no signatures data. Validator is down.")
@@ -180,7 +205,7 @@ class GetData(Thread):
         page_number = 1
         while True:
             try:
-                bonding_data = requests.get(
+                bonding_data = get(
                 f"http://localhost:{self.PORT}/validators?status=BOND_STATUS_BONDED&per_page=100&page={page_number}").json()
 
                 if [i for i in bonding_data['result']['validators'] if i['address'] == self.validator_address]:
@@ -246,11 +271,11 @@ class GetData(Thread):
 
     def check_oracle_votes(self):
         try:
-            new_missed_votes = int(requests.get(self.oracle_url).json()['result'])
+            new_missed_votes = int(get(self.oracle_url).json()['result'])
         except:
             new_missed_votes = 0
         try:
-            oracle_height = int(requests.get(self.oracle_url).json()['height'])
+            oracle_height = int(get(self.oracle_url).json()['height'])
         except:
             oracle_height = 0
 
@@ -268,22 +293,22 @@ class GetData(Thread):
 
     def injective_peggo(self):
         try:
-            batch = requests.get(self.peggo_lastbatch_url).json()['batch']
+            batch = get(self.peggo_lastbatch_url).json()['batch']
             if batch: #should be None is working fine
                 self.peggo_status = f"Batch pending: {batch}"
                 return
-            valsets = requests.get(self.peggo_valsets_url).json()['valsets']
+            valsets = get(self.peggo_valsets_url).json()['valsets']
             if valsets:
                 self.peggo_status = f"Valsets pending: {valsets}"
                 return
 
-            lon = int(requests.get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
-            lce = int(requests.get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
+            lon = int(get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
+            lce = int(get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
             if lon < lce == 1:
-                self.peggo_status = f"Peggo is late: LON={lon}, LCE={lce}"
+                self.peggo_status = f"Peggo is 1 nonce late: LON={lon}, LCE={lce}"
                 return
             elif lon < lce > 1:
-                self.peggo_status = f"Peggo is f'{lon}-{lce}' behind"
+                self.peggo_status = f"Peggo is f'{lon-lce}' nonces late"
                 return
 
             self.peggo_status = "OK"
@@ -295,17 +320,17 @@ class GetData(Thread):
 
     def umee_peggo(self):
         try:
-            missed = int(requests.get(self.missed_url).json()['miss_counter'])
-            window = int(requests.get(self.window_url).json()['window_progress'])
+            missed = int(get(self.missed_url).json()['miss_counter'])
+            window = int(get(self.window_url).json()['window_progress'])
             # misses = self.missed/self.window
             new_ratio = missed / window
-            self.peggo_status = (new_ratio - self.peggo_ratio) / new_ratio * 100  # round(self.peggo_ratio - new_ratio, 6) #f'{self.peggo_ratio - new_ratio:.5f}'
+            self.peggo_status = 0 if new_ratio == 0 else (new_ratio - self.peggo_ratio) / new_ratio * 100  # round(self.peggo_ratio - new_ratio, 6) #f'{self.peggo_ratio - new_ratio:.5f}'
             self.peggo_ratio = new_ratio
             # self.peggo_status = -1 if misses > 0.20 else (misses if misses > 0.05 else "OK")
             return
             # THE BELOW IS NOT IMPLEMENTED CURRENTLY.
-            # lon = int(requests.get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
-            # lce = int(requests.get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
+            # lon = int(get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
+            # lce = int(get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
             # if not lon - lce == 0:
             #     self.peggo_status = f"Peggo is late: LON={lon}, LCE={lce}"
             #     return
@@ -315,6 +340,15 @@ class GetData(Thread):
             self.peggo_status = -2  # 'No data'
             return
 
+    def band_yoda(self):
+        
+        try:
+            if get(self.yoda_status_url).json()['status']['is_active']: #if true
+                self.yoda_status = 'Active'
+            else:
+                self.yoda_status = 'Inactive'
+        except:
+            self.yoda_status = 'No data'
 
 #if __name__ == "__main__":
 parser = ArgumentParser()
