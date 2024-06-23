@@ -24,9 +24,9 @@ if [ $EUID != 0 ]; then
     exit
 fi
 
-apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wget bc gawk dc build-essential snmp libnet-snmp-perl gettext xinetd python3-pip #python3-fastapi python3-uvicorn
+apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wget bc gawk dc build-essential snmp libnet-snmp-perl gettext xinetd python3-pip python3-fastapi python3-uvicorn python3-discord
 
-pip install fastapi==0.75.0 starlette==0.17.1 uvicorn==0.17.6
+#pip install fastapi==0.75.0 starlette==0.17.1 uvicorn==0.17.6
 
 wget --no-check-certificate -O nagios-plugins.tar.gz https://github.com/nagios-plugins/nagios-plugins/archive/release-2.3.3.tar.gz
 wget https://github.com/NagiosEnterprises/nrpe/releases/download/nrpe-4.0.3/nrpe-4.0.3.tar.gz
