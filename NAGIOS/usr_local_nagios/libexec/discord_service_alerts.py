@@ -4,7 +4,7 @@ import sys
 #from discord_webhook import DiscordWebhook, DiscordEmbed
 from discord import SyncWebhook #, Embed
 
-HOOK = "https://discord.com/api/webhooks/953992689152577536/qX5TkFZe2HCwPswnBJVjcVTQ5To6ny-mh5MpIicC5C0RhttyBolh8II_lLojiyV4B-sw"
+HOOK = "THE DISCORD WEBHOOK LINK HERE: https://......"
 
 # def codecolor(alerttype):
 #     clr_red = 13632027
