@@ -1,27 +1,54 @@
-{{ define "slack.default.message" }}
-{{ range . }}
+{{ define "discord.summary" }}
+{{- if gt (len .Alerts.Firing) 0 -}}
+    {{- with index .Alerts.Firing 0 -}}
+        🚨 **ALERTING:** {{ .Labels.alertname }}
+    {{- end -}}
+    {{- if gt (len .Alerts.Firing) 1 -}}
+        ({{ len .Alerts.Firing }} total)
+    {{- end -}}
+{{- else if gt (len .Alerts.Resolved) 0 -}}
+    {{- with index .Alerts.Resolved 0 -}}
+        ✅ **RESOLVED:** {{ .Labels.alertname }}
+    {{- end -}}
+    {{- if gt (len .Alerts.Resolved) 1 -}}
+        ({{ len .Alerts.Resolved }} total)
+    {{- end }}
+{{- else -}}
+ℹ️ **Alert Status Update**
+{{- end -}}
+{{ end }}
+
+{{ define "discord.default.message" }}
+{{- range . -}}
+**{{ .Labels.alertname }}** - {{ .Annotations.summary }}
 {{ .Annotations.message }}
 
 {{ with .ValueString }}
-{{- . | reReplaceAll `\[\s` "" | reReplaceAll `\],\s` "\n"  | reReplaceAll `\]` "" | reReplaceAll `labels=.*}` "" | reReplaceAll `value=([0-9\.]+)` "**$1**" }}
+{{- . | reReplaceAll `\[\s` "" | reReplaceAll `\],\s` "\n"  | reReplaceAll `\]` "" | reReplaceAll `labels=.*}` "" | reReplaceAll `value=([0-9\.]+)` "**$1**" -}}
+
 {{ end }}
-{{ end }}
+{{ end -}}
 {{ end }}
 
-{{ define "slack.resolved.message" }}
-
-{{ range . }}
+{{ define "discord.resolved.message" }}
+{{- range . -}}
+{{ .Labels.alertname }}
 {{ .Annotations.message }}
+
 {{ with .ValueString }}
-{{- . | reReplaceAll `\[\s` "" | reReplaceAll `\],\s` "\n"  | reReplaceAll `\]` "" | reReplaceAll `labels=.*}` "" | reReplaceAll `value=([0-9\.]+)` "**$1**" }}
-	{{ end }}
-
-
+{{- . | reReplaceAll `\[\s` "" | reReplaceAll `\],\s` "\n"  | reReplaceAll `\]` "" | reReplaceAll `labels=.*}` "" | reReplaceAll `value=([0-9\.]+)` "**$1**" -}}
 {{ end }}
+{{ end -}}
 {{ end }}
 
+{{ define "discord" }}
+{{- template "discord.summary" . -}}
 
-{{ define "slack" }}
-        {{ if gt (len .Alerts.Firing) 0 }}{{ template "slack.default.message" .Alerts.Firing }}{{ end }}
-        {{ if gt (len .Alerts.Resolved) 0 }}{{ template "slack.resolved.message" .Alerts.Resolved }}{{ end }}
+{{ if gt (len .Alerts.Firing) 0 }}
+{{ template "discord.default.message" .Alerts.Firing }}
+{{- end -}}
+
+{{- if gt (len .Alerts.Resolved) 0 }}
+{{ template "discord.resolved.message" .Alerts.Resolved }}
+{{- end -}}
 {{ end }}
