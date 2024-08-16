@@ -43,7 +43,7 @@ elif [[ $1 =~ (missed_block_height) ]]; then
   fi
 
 elif [[ $1 =~ (oracle_status) ]]; then
-        if [[ $status =~ (Total) ]]; then
+        if [[ $status =~ (OK) ]]; then
           echo $status
           exit 0
   elif [[ $status =~ (MISSED|WARNING) ]]; then
@@ -76,6 +76,18 @@ elif [[ $1 =~ (yoda) ]]; then
   elif [[ $status =~ (No data) ]]; then
           echo $status
           exit 1
+  fi
+
+elif [[ $1 =~ (slinky) ]]; then
+        if [[ $status =~ (OK) ]]; then
+          echo $status
+          exit 0
+  elif [[ $status =~ (LATE|OFFLINE) ]]; then
+          echo $status
+          exit 2
+#  elif [[ $status =~ (No data) ]]; then
+#          echo $status
+#          exit 1
   fi
 
 #UMEE VOTE MISSES RATIO

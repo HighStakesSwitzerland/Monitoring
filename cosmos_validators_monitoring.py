@@ -4,6 +4,7 @@ from threading import Thread
 from time import sleep
 from requests import get
 from datetime import datetime
+from time import time
 
 import uvicorn
 from fastapi import FastAPI
@@ -37,10 +38,10 @@ class GetData(Thread):
         ##TERRA SPECIFIC : ORACLE API##
         self.terravaloper = ''
         if self.VALIDATOR == 'terra':
-            self.oracle_url = f"http://localhost:1317/oracle/voters/{self.terravaloper}/miss"
-            self.oracle_status = ""
+            self.oracle_url = f"http://localhost:1318/terra/oracle/v1beta1/validators/{self.terravaloper}/miss"
+            self.oracle_status = "OK"
             try:
-                self.missed_votes = int(get(self.oracle_url).json()['result'])
+                self.missed_votes = int(get(self.oracle_url).json()['miss_counter'])
             except:
                 self.missed_votes = 0
             self.timeout = 0
@@ -73,6 +74,11 @@ class GetData(Thread):
         if self.VALIDATOR == 'bandprotocol':
             self.yoda_status = ''
             self.yoda_status_url = f"http://localhost:1318/oracle/v1/validators/{self.band_address}"
+
+        ##NEUTRON: SLINKY
+        if self.VALIDATOR == 'neutron':
+            self.slinky_url = 'http://localhost:8080/slinky/oracle/v1/prices'
+            self.slinky_status = ''
 
         ###define the urls to get the json data
         self.status_url = f"http://localhost:{self.PORT}/status"
@@ -113,6 +119,10 @@ class GetData(Thread):
         @self.app.get(f"/{self.VALIDATOR}/yoda")
         def yoda():
             return self.yoda_status
+
+        @self.app.get(f"/{self.VALIDATOR}/slinky")
+        def slinky():
+            return self.slinky_status
 
     def run(self):
 
@@ -186,6 +196,9 @@ class GetData(Thread):
                     if self.VALIDATOR == 'bandprotocol':
                         #if self.timeout == 10:
                         self.band_yoda()
+
+                    if self.VALIDATOR == 'neutron':
+                        self.slinky()
 
                     sleep(7)
 
@@ -271,23 +284,24 @@ class GetData(Thread):
 
     def check_oracle_votes(self):
         try:
-            new_missed_votes = int(get(self.oracle_url).json()['result'])
+            new_missed_votes = int(get(self.oracle_url).json()['miss_counter'])
         except:
             new_missed_votes = 0
-        try:
-            oracle_height = int(get(self.oracle_url).json()['height'])
-        except:
-            oracle_height = 0
+        #try:
+        #    oracle_height = int(requests.get(self.oracle_url).json()['height'])
+        #except:
+        #    oracle_height = 0
 
         missed = new_missed_votes - self.missed_votes
         if missed > 0:
-            logging.warning(f"{self.VALIDATOR}: {missed} MISSED ORACLE VOTE(S)")
-            self.oracle_status = f"{missed} MISSED ORACLE VOTE(S)"
-        elif not isclose(oracle_height, int(self.block_height), abs_tol=1):
-            logging.critical(f"{self.VALIDATOR}: ORACLE IS STUCK: {oracle_height}")
-            self.oracle_status = f"ORACLE IS STUCK: {oracle_height}"
+            if missed < 3:
+                logging.warning(f"{self.VALIDATOR}: {missed} MISSED ORACLE VOTE(S)")
+                self.oracle_status = f"{missed} MISSED ORACLE VOTE(S)"
+            else:
+                logging.critical(f"{self.VALIDATOR}: ORACLE IS STUCK")
+                self.oracle_status = f"ORACLE IS STUCK"
         else:
-            self.oracle_status =  f"Total missed votes: {self.missed_votes} "
+            self.oracle_status =  "OK" #f"Total missed votes: {self.missed_votes} "
 
         self.missed_votes = new_missed_votes
 
@@ -349,6 +363,18 @@ class GetData(Thread):
                 self.yoda_status = 'Inactive'
         except:
             self.yoda_status = 'No data'
+
+
+    def slinky(self):
+        try:
+            last_update = datetime.fromisoformat(get(self.slinky_url, timeout=1).json()['timestamp']).timestamp()
+            if isclose(last_update, time(), abs_tol=2):
+                self.slinky_status = 'OK'
+            else:
+                self.slinky_status = 'LATE'
+        except:
+            self.slinky_status = 'OFFLINE'
+
 
 #if __name__ == "__main__":
 parser = ArgumentParser()
