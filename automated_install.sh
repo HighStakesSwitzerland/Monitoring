@@ -49,7 +49,7 @@ if [[ -v NRPE_PORT ]] && [[ "$NRPE_PORT" != "5666" ]]; then
   sed -i "s/5666/$NRPE_PORT/g" /etc/services
 fi
 
-cp ../check_api /usr/local/nagios/libexec/
+cp ../check_api ../check_service /usr/local/nagios/libexec/
 
 sed -i "s/127.0.0.1 ::1/127.0.0.1 ::1 $NAGIOS_SERVER_IP/g" /etc/xinetd.d/nrpe
 systemctl restart xinetd.service
@@ -63,6 +63,7 @@ done
 
 echo 'command[check_icmp]=/usr/local/nagios/libexec/check_icmp localhost' >> /usr/local/nagios/etc/nrpe.cfg
 echo 'command[check_api]=/usr/local/nagios/libexec/check_api $ARG1$' >> /usr/local/nagios/etc/nrpe.cfg
+echo 'command[check_nginx]=/usr/local/nagios/libexec/check_service -s nginx' >> /usr/local/nagios/etc/nrpe.cfg
 sed -i 's/dont_blame_nrpe=0/dont_blame_nrpe=1/g' /usr/local/nagios/etc/nrpe.cfg
 sed -i "s/allowed_hosts=127.0.0.1,::1/allowed_hosts=127.0.0.1,::1,$NAGIOS_SERVER_IP/g" /usr/local/nagios/etc/nrpe.cfg
 

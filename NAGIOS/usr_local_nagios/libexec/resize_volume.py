@@ -59,6 +59,7 @@ class ResizeVolume:
 
       current_size = int(volume_details['volume']['size_gigabytes'])
       filesystem = volume_details['volume']['filesystem_type'] #xfs or ext4, necessary to pass the appropriate resize command
+      region = volume_details['region']['slug']
 
       #let's check that the disk size in the OS matches the volume size, otherwise it may mean that the last run failed to expand the filesystem.
       #no need to keep buying additional space if it's not actually used.
@@ -75,7 +76,7 @@ class ResizeVolume:
 
       if isclose(os_size, current_size, abs_tol=5): #both sizes are close enough, so we can proceed
         #POST request to resize the volume (add 5G)
-        data = {'type':'resize','size_gigabytes': current_size + 5, "region": f'{DIGITALOCEAN_REGION}'}
+        data = {'type':'resize','size_gigabytes': current_size + 5, "region": f'{region}'}
         result = requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions', headers=self.headers, data=dumps(data), timeout=30).json()
 
         if result['action']['status'] == 'done':
@@ -87,7 +88,7 @@ class ResizeVolume:
         self.expand_filesystem(filesystem) #let's just try to use the entire available space.
         exit(0)
 
-      exit(1)
+      # exit(1)
 
   def hetzner(self):
 
@@ -123,7 +124,7 @@ class ResizeVolume:
       self.expand_filesystem(filesystem)
       exit(0)
 
-    exit(1)
+    #exit(1)
 
   def expand_filesystem(self, filesystem):
     if filesystem == 'ext4':
