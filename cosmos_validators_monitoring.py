@@ -307,22 +307,22 @@ class GetData(Thread):
 
     def injective_peggo(self):
         try:
-            batch = get(self.peggo_lastbatch_url).json()['batch']
-            if batch: #should be None is working fine
-                self.peggo_status = f"Batch pending: {batch}"
-                return
-            valsets = get(self.peggo_valsets_url).json()['valsets']
-            if valsets:
-                self.peggo_status = f"Valsets pending: {valsets}"
-                return
-
             lon = int(get(self.peggo_last_observed_nonce_url).json()['state']['last_observed_nonce'])
             lce = int(get(self.peggo_last_claimed_event_url).json()['last_claim_event']['ethereum_event_nonce'])
             if lon < lce == 1:
                 self.peggo_status = f"Peggo is 1 nonce late: LON={lon}, LCE={lce}"
                 return
-            elif lon < lce > 1:
-                self.peggo_status = f"Peggo is f'{lon-lce}' nonces late"
+            elif lon - lce > 1:
+                self.peggo_status = f"Peggo is f'{lon-lce}' nonces behind"
+                return
+
+            batch = get(self.peggo_lastbatch_url).json()['batch']
+            if batch:  # should be None is working fine
+                self.peggo_status = f"Batch pending: {batch}"
+                return
+            valsets = get(self.peggo_valsets_url).json()['valsets']
+            if valsets:
+                self.peggo_status = f"Valsets pending: {valsets}"
                 return
 
             self.peggo_status = "OK"
