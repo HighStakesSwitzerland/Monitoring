@@ -8,10 +8,6 @@
 #"resize_volume.py" and "volume_data.py" must be placed in /usr/local/nagios/libexec/
 ###############
 
-
-#RUN MANUALLY WITH:
-#python3 /usr/local/nagios/libexec/resize_volume.py HETZNER_10 'Check Disk Space SENTINEL' CRITICAL HARD
-
 from time import sleep
 
 import requests
@@ -19,120 +15,131 @@ from json import dumps
 from subprocess import Popen, check_output
 from math import isclose
 from argparse import ArgumentParser
-from volume_data import * #API token, droplet IPs and region, volume ids and mount points
+from volume_data import *  # API token, droplet IPs and region, volume ids and mount points
+import logging
+logging.basicConfig(filename='/usr/local/nagios/var/nagios.log', filemode='a+', format='%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S :', level=logging.INFO)
+
 
 class ResizeVolume:
-  def __init__(self, args):
-    super().__init__()
-    print(args) #will appear in nagios' log
-    self.host = args.host
-    service = args.service
-    self.service_state = args.service_state #OK, WARNING, UNKNOWN, CRITICAL
-    self.service_state_type = args.service_state_type #SOFT OR HARD
-    #host and service combination allows to identify the concerned volume.
-    #host can be 'DIGITALOCEAN_1', service for example 'Check Disk Space 2'. Take the digit from the service to identify the disk.
+    def __init__(self, args):
+        super().__init__()
+        logging.info(str(args))  # will appear in nagios' log
+        self.host = args.host
+        service = args.service
+        self.service_state = args.service_state  # OK, WARNING, UNKNOWN, CRITICAL
+        self.service_state_type = args.service_state_type  # SOFT OR HARD
+        # host and service combination allows to identify the concerned volume.
+        # host can be 'DIGITALOCEAN_1', service for example 'Check Disk Space 2'. Take the digit from the service to identify the disk.
 
-    self.ip = eval(f"{self.host}_IP")   #this is ugly.
-    self.volume_id = eval(f"{self.host}_VOLID_{service.split()[-1]}")
-    self.mount_point = eval(f"{self.host}_MOUNTPOINT_{service.split()[-1]}")
+        self.ip = eval(f"{self.host}_IP")   # this is ugly.
+        self.volume_id = eval(f"{self.host}_VOLID_{service.split()[-1]}")
+        self.mount_point = eval(f"{self.host}_MOUNTPOINT_{service.split()[-1]}")
 
 
-    if 'DIGITALOCEAN' in self.host:
-      self.headers = {'Authorization': f'Bearer {do_token}'} #authorization header for the API calls
-    elif 'HETZNER' in self.host:
-      self.headers = {'Authorization': f'Bearer {hz_token}'}
+        if 'DIGITALOCEAN' in self.host:
+            self.headers = {'Authorization': f'Bearer {do_token}'}  # authorization header for the API calls
+        elif 'HETZNER' in self.host:
+            self.headers = {'Authorization': f'Bearer {hz_token}'}
 
-  def run(self):
+    def run(self):
 
-    if self.service_state == 'CRITICAL' and self.service_state_type == 'HARD': #Do nothing if different combination.
+        if self.service_state == 'CRITICAL' and self.service_state_type == 'HARD':  # Do nothing if different combination.
+            logging.info(f"VALUES: {self.volume_id}, {self.mount_point}, {self.ip}")
+            if 'DIGITALOCEAN' in self.host:
+                self.digital_ocean()
+            elif 'HETZNER' in self.host:
+                self.hetzner()
 
-      print("VALUES: ", self.volume_id, self.mount_point, self.ip )
+    def digital_ocean(self):
 
-      if 'DIGITALOCEAN' in self.host:
-        self.digital_ocean()
-      elif 'HETZNER' in self.host:
-        self.hetzner()
+        volume_details = requests.get(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}', headers=self.headers, timeout=30).json()
+        current_size = int(volume_details['volume']['size_gigabytes'])
+        filesystem = volume_details['volume']['filesystem_type']  # xfs or ext4, necessary to pass the appropriate resize command
+        region = volume_details['volume']['region']['slug']
 
-  def digital_ocean(self):
+        # print(volume_details, int(current_size), filesystem, region)
+        # let's check that the disk size in the OS matches the volume size, otherwise it may mean that the last run failed to expand the filesystem.
+        # no need to keep buying additional space if it's not actually used.
+        os_size = 0
+        try:
+            os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'sudo df | sudo grep {self.mount_point}'], timeout=10).decode('utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
+        except Exception as e:
+            # well I don't know. Do nothing anyway.
+            logging.error(e)
+            pass
 
-      volume_details = requests.get(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}', headers=self.headers, timeout=30).json()
+        logging.info(f"CURRENT SIZE & OS SIZE: {str(current_size)}, {str(os_size)}")
 
-      current_size = int(volume_details['volume']['size_gigabytes'])
-      filesystem = volume_details['volume']['filesystem_type'] #xfs or ext4, necessary to pass the appropriate resize command
-      region = volume_details['region']['slug']
+        if isclose(os_size, current_size, abs_tol=1):
+            # both sizes are close enough, so we can proceed
+            # POST request to resize the volume (add 5G)
+            data = {'type': 'resize', 'size_gigabytes': current_size + 1, "region": f'{region}'}
 
-      #let's check that the disk size in the OS matches the volume size, otherwise it may mean that the last run failed to expand the filesystem.
-      #no need to keep buying additional space if it's not actually used.
-      os_size = 0
-      try:
-        os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'sudo df | sudo grep {self.mount_point}'], timeout=10).decode(
-          'utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
-      except Exception as e:
-        #well I don't know. Do nothing anyway.
-        print(e)
-        pass
+            try:
+                requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions', headers=self.headers, data=dumps(data), timeout=30).json()
 
-      print("CURRENT SIZE & OS SIZE: ", current_size, os_size)
+                sleep(5)
+                # if result['action']['status'] == 'done':
+                self.expand_filesystem(filesystem)
 
-      if isclose(os_size, current_size, abs_tol=5): #both sizes are close enough, so we can proceed
-        #POST request to resize the volume (add 5G)
-        data = {'type':'resize','size_gigabytes': current_size + 5, "region": f'{region}'}
-        result = requests.post(f'https://api.digitalocean.com/v2/volumes/{self.volume_id}/actions', headers=self.headers, data=dumps(data), timeout=30).json()
+            except Exception as e:
+                logging.error(f"Error resizing volume: {e}")
+                exit(1)
 
-        if result['action']['status'] == 'done':
-          self.expand_filesystem(filesystem)
-          exit(0)
-        #no need for a try/except: script will fail whatever the exception. Someone will need to manually increase the volume size.
-        #next run will detect that the disk size at the os and droplet levels are different and abort.
-      else: #the only option here is that the disk is larger than the OS thinks - maybe was increased and the filesystem not expanded.
-        self.expand_filesystem(filesystem) #let's just try to use the entire available space.
+            # no need for a try/except: script will fail whatever the exception. Someone will need to manually increase the volume size.
+            # next run will detect that the disk size at the os and droplet levels are different and abort.
+        else:
+            # the only option here is that the disk is larger than the OS thinks - maybe was increased and the filesystem not expanded.
+            self.expand_filesystem(filesystem) # let's just try to use the entire available space.
+
         exit(0)
 
-      # exit(1)
+    def hetzner(self):
 
-  def hetzner(self):
+        volume_details = requests.get(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
+                                      timeout=30).json()
 
-    volume_details = requests.get(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
-                                  timeout=30).json()
+        current_size = int(volume_details['volume']['size'])
+        filesystem = volume_details['volume']['format']
 
-    current_size = int(volume_details['volume']['size'])
-    filesystem = volume_details['volume']['format']
+        os_size = 0
+        try:
+            os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'sudo df | sudo grep {self.mount_point}'], timeout=10).decode('utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
+        except Exception as e:
+            logging.error(e)
+            pass
 
-    os_size = 0
-    try:
-      os_size = round(float(check_output(["ssh", f"{ssh_account}@{self.ip}", f'sudo df | sudo grep {self.mount_point}'], timeout=10).decode(
-        'utf-8').split()[1])/1048576) #convert the kb to gb (1024*1024)
-    except Exception as e:
-      print(e)
-      pass
+        logging.info(f"CURRENT SIZE & OS SIZE:  {current_size}, {os_size}")
 
-    print("CURRENT SIZE & OS SIZE: ", current_size, os_size)
+        if isclose(os_size, current_size, abs_tol=5):
+            data = {'size': current_size + 5}
 
-    if isclose(os_size, current_size, abs_tol=5):
-      data = {'size': current_size + 5}
-      requests.post(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}/actions/resize', headers=self.headers,
-                             data=dumps(data), timeout=30).json()
+            try:
+                requests.post(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}/actions/resize', headers=self.headers, data=dumps(data), timeout=30).json()
 
-      #the result isn't sent back immediately. Just check the new size of the volume to make sure it worked.
-      sleep(3) #wait a bit to ensure the command is actually passed (although from the timestamps, it's done instantly).
-      #new_size = int(requests.get(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}', headers=self.headers,
-       #                           timeout=30).json()['volume']['size'])
-      #if new_size > current_size:
-      self.expand_filesystem(filesystem)
-      exit(0)
-    else:
-      self.expand_filesystem(filesystem)
-      exit(0)
+                sleep(5) # wait a bit to ensure the command is actually passed (although from the timestamps, it's done instantly).
+                # new_size = int(requests.get(f'https://api.hetzner.cloud/v1/volumes/{self.volume_id}', headers=self.headers, timeout=30).json()['volume']['size'])
+                # if new_size > current_size:
+                self.expand_filesystem(filesystem)
+            except Exception as e:
+                logging.error(f"Error resizing volume: {e}")
+                exit(1)
+        else:
+            self.expand_filesystem(filesystem)
 
-    #exit(1)
+        exit(0)
 
-  def expand_filesystem(self, filesystem):
-    if filesystem == 'ext4':
-      command = 'resize2fs'
-    else:
-      command = 'xfs_growfs'
-    Popen(["ssh", f"{ssh_account}@{self.ip}", f"sudo {command} {self.mount_point}"])
-    return
+    def expand_filesystem(self, filesystem):
+        if filesystem == 'ext4':
+            command = 'resize2fs'
+        else:
+            command = 'xfs_growfs'
+        try:
+            Popen(["ssh", f"{ssh_account}@{self.ip}", f"sudo {command} {self.mount_point}"])
+        except Exception as e:
+            logging.error(f"Failed to resize the disk: {e}")
+        return
+
 
 parser = ArgumentParser()
 parser.add_argument('host')

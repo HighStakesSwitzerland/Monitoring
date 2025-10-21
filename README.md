@@ -63,5 +63,7 @@ Do NOT overlook the email alerts. :)
 - The python script will use the Cloud service API to add 5G to a volume when it has only 3G left (just in case it fails, to give enough time to resolve manually).
 - Then it connects to the server in SSH and passes the command to expand the filesystem.
 - This is most definitely a security problem, although the SSH account that is used is a very limited one that can only execute this command (using <code>rbash</code> and <code>sudoers</code>) ; working on a more secure solution.
+- run manually with <code>/usr/local/nagios/libexec/resize_volume.py 'DIGITALOCEAN_1' 'Check Disk Space VOLUME' CRITICAL HARD</code>
+
 
 - Don't hesitate to ping us on Discord: <code>Thomas | High Stakes#0885</code> or <code>Joe | High Stakes#0880</code>

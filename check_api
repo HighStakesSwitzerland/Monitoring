@@ -55,16 +55,20 @@ elif [[ $1 =~ (oracle_status) ]]; then
   fi
 
 elif [[ $1 =~ (peggo) ]]; then
-        if [[ $status =~ (OK) ]]; then
+
+        if (( $(echo "$status == -2" |bc -l) )); then
+                echo NO DATA
+                exit 2
+        elif (( $(echo "$status < 0.01" |bc -l) ));then
           echo $status
           exit 0
-  elif [[ $status =~ (pending|late) ]]; then
-          echo $status
-          exit 1
-  elif [[ $status =~ (No data|behind) ]]; then
+        elif (( $(echo "$status >= 0.01" |bc -l) ));then
           echo $status
           exit 2
-  fi
+        else
+          echo $status
+           exit 1
+   fi
 
 elif [[ $1 =~ (yoda) ]]; then
         if [[ $status =~ (Active) ]]; then
