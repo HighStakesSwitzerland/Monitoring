@@ -64,8 +64,12 @@ class GetData(Thread):
             self.peggo_status = 0
             self.missed_url = f"http://localhost:1317/umee/oracle/v1/validators/{self.umee_address}/miss"
             self.window_url = f"http://localhost:1317/umee/oracle/v1/slash_window"
-            missed = int(get(self.missed_url).json()['miss_counter'])
-            window = int(get(self.window_url).json()['window_progress'])
+            try:
+                missed = int(get(self.missed_url).json()['miss_counter'])
+                window = int(get(self.window_url).json()['window_progress'])
+            except: #will fail if node isn't up
+                missed = 1
+                window = 1
             self.peggo_ratio = missed/window
 
 
