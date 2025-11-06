@@ -28,7 +28,7 @@ NAGIOS_PLUGINS_VERSION=2.4.11
 NRPE_VERSION=4.1.1
 
 
-apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wget bc gawk dc build-essential snmp libnet-snmp-perl gettext xinetd python3-pip python3-fastapi python3-uvicorn python3-discord
+apt update && apt install -y autoconf gcc libc6 libmcrypt-dev make libssl-dev wget bc gawk dc build-essential snmp libnet-snmp-perl gettext python3-pip python3-fastapi python3-uvicorn python3-discord #xinetd
 
 #pip install fastapi==0.75.0 starlette==0.17.1 uvicorn==0.17.6
 
@@ -51,8 +51,8 @@ fi
 
 cp ../check_api ../check_service /usr/local/nagios/libexec/
 
-sed -i "s/127.0.0.1 ::1/127.0.0.1 ::1 $NAGIOS_SERVER_IP/g" /etc/xinetd.d/nrpe
-systemctl restart xinetd.service
+#sed -i "s/127.0.0.1 ::1/127.0.0.1 ::1 $NAGIOS_SERVER_IP/g" /etc/xinetd.d/nrpe
+#systemctl restart xinetd.service
 
 
 ### DISK CONFIG ###
