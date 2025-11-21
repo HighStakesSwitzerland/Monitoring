@@ -9,9 +9,9 @@ NRPE_PORT=58888  #update this to whatever works for you - or comment out so that
 
     ###DISK CONFIGURATION###
 #volume configuration for monitoring the disk space.
-root_disk='command[check_disk_1]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /dev/sda1' #or vda1 or whatever the root disk is.
-#volume1='command[check_disk_2]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /dev/sdb'
-#volume2='command[check_disk_3]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /dev/sdc'
+root_disk='command[check_disk_1]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /' #or vda1 or whatever the root disk is.
+#volume1='command[check_disk_2]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /mnt/sdb'
+#volume2='command[check_disk_3]=/usr/local/nagios/libexec/check_disk -w 6000 -c 3000 -p /mnt/sdc'
 #etc.
 
 DISK_LIST=("$root_disk") #ex: ("$root_disk" "$volume1" "$volume2"). No comma.
