@@ -89,6 +89,9 @@ done
 
 sed -i "s|- targets: \[\"localhost:9100\"\]|$line|" /etc/prometheus/prometheus.yml
 
+#comment out last 2 lines. Prevent prometheus from starting
+sed -i 's/app:/#app:/g'  /etc/prometheus/prometheus.yml
+sed -i 's/labels:/#labels:/g'  /etc/prometheus/prometheus.yml
 
 systemctl daemon-reload
 systemctl enable prometheus
