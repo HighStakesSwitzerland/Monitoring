@@ -25,7 +25,7 @@ class updateClients:
 
 
     def discord_message(self, message):
-        webhook = DiscordWebhook(url="https://discord.com/api/webhooks/904989960707391538/P-hv3yGN4VS07pPBUV39nKSiDh6nHaziymBu5hZDPIGN2Gznb3f-Z0B85caqLigs9uxq")
+        webhook = DiscordWebhook(url="https://discord.com/api/webhooks/xxx")
         embed = DiscordEmbed(title=f"IBC Client Update Failure", description=message, color=16776960)
         webhook.add_embed(embed)
         webhook.execute()
