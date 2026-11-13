@@ -287,10 +287,10 @@ class GetData(Thread):
             lce = int(
                 get(self.peggo_last_claimed_event_url, timeout=10).json()['last_claim_event']['ethereum_event_nonce'])
             if lon < lce == 1:
-                self.peggo_status = f"Peggo is 1 nonce late: LON={lon}, LCE={lce}"
+                self.peggo_status = f"WARNING: 1 nonce late: LON={lon}, LCE={lce}"
                 return
             elif lon - lce > 1:
-                self.peggo_status = f"Peggo is f'{lon - lce}' nonces behind"
+                self.peggo_status = f"CRITICAL: {lon - lce}' nonces behind"
                 return
 
             batch = get(self.peggo_lastbatch_url, timeout=10).json()['batch']
