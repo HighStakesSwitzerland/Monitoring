@@ -63,11 +63,11 @@ class GetData(Thread):
         self.band_address = ''
         if self.VALIDATOR == 'bandprotocol':
             self.yoda_status = ''
-            self.yoda_status_url = f"http://157.180.0.55:1318/oracle/v1/validators/{self.band_address}"
+            self.yoda_status_url = f"http://localhost:1318/oracle/v1/validators/{self.band_address}"
 
         ###define the urls to get the json data
-        self.status_url = f"http://157.180.0.55:{self.PORT}/status"
-        self.signatures_url = f"http://157.180.0.55:{self.PORT}/block"
+        self.status_url = f"http://localhost:{self.PORT}/status"
+        self.signatures_url = f"http://localhost:{self.PORT}/block"
         ###
         ###setup FastAPI
         if app is None:
@@ -176,7 +176,7 @@ class GetData(Thread):
         while True:
             try:
                 bonding_data = get(
-                    f"http://157.180.0.55:{self.PORT}/validators?status=BOND_STATUS_BONDED&per_page=100&page={page_number}",
+                    f"http://localhost:{self.PORT}/validators?status=BOND_STATUS_BONDED&per_page=100&page={page_number}",
                     timeout=10).json()
 
                 if [i for i in bonding_data['result']['validators'] if i['address'] == self.validator_address]:
